@@ -178,6 +178,21 @@ class Query{
 			return $result;
 		}
 	}
+
+	public function getLastID($idName)
+	{
+		//echo $this->table;
+		$sql = "SELECT MAX({$idName}) FROM {$this->table}";
+		//echo $sql;
+		$result = mysql_query($sql);
+	    $row = mysql_fetch_row($result);
+	    if(count($row) == 0)
+	    	return array( $idName => 0);
+	    $highest_id = $row[0];
+	    if($highest_id == null)
+	    	$highest_id = 0;
+	    return array( $idName => $highest_id);
+	}
 	
 
 }

@@ -5,34 +5,49 @@ require("./query.php");
 * Develop by Sompop Kulapalanont
 * Email : sompop.kulapalanont@gmail.com
 */
-
-$action = $_GET['action'];
-$table = $_GET['table'];
-
-
-if($action == "query")
+if(isset($_GET) && isset($_GET['action']) && isset($_GET['table']))
 {
-	$params = $_GET['params'];
-	$query = new Query($table);
-	echo json_encode($query->selectAll($params));
-}else if($action == "get")
-{
-	$params = $_GET['params'];
-	$query = new Query($table);
-	$data = $query->selectOne($params);
-	echo json_encode($data);
-	
-}else if($action == "update")
-{
+	$action = $_GET['action'];
+	$table = $_GET['table'];
 
-}else if($action == "create")
-{
 
-}else if($action == "upload")
+	if($action == "query")
+	{
+		$params = $_GET['params'];
+		$query = new Query($table);
+		echo json_encode($query->selectAll($params));
+	}else if($action == "get")
+	{
+		$params = $_GET['params'];
+		$query = new Query($table);
+		$data = $query->selectOne($params);
+		echo json_encode($data);
+		
+	}else if($action == "last_id")
+	{
+		$params = $_GET['params'];
+		$query = new Query($table);
+		$id_name = $params['idName'];
+		$data = $query->getLastID($id_name);
+		echo json_encode($data);
+	}
+}else if(isset($_POST))
 {
-	
+	$postdata = file_get_contents("php://input");
+    $request = json_decode($postdata);
+
+	$action = $request->action;
+	$table = $request->table;
+	$params = $request->params;
+
+	if($action == 'create')
+	{
+		//echo "gonna create";
+		$query = new Query($table);
+		$data = $query->create($params);
+		echo json_encode($data);
+	}
 }
-
-
+	
 
 ?>

@@ -1,4 +1,18 @@
-﻿angular.module("sick",['ui.bootstrap', 'leave.controller'])
+﻿var SERVICE_PATH = "http://leave.splifetech.com/leave/service.php";
+var Config = {
+	errorText : "ลาเกินสิทธิ์ ",
+	leaveTypes : [
+			{"name" : "ลาป่วย", "value":"01" },
+			{"name" : "ลากิจ", "value":"02" },
+			{"name" : "ลาพักผ่อน", "value":"03" },
+			{"name" : "ลาคลอด", "value":"04" },
+			{"name" : "ลาบวช", "value":"05" },
+			{"name" : "อื่นๆ", "value":"06" }
+	],
+
+}
+
+angular.module("sick",['ui.bootstrap', 'leave.controller'])
 
 angular.module("sick.filter", [])
 	.filter('http_params_str', function(){
@@ -23,7 +37,7 @@ angular.module("sick.filter", [])
 				var params_str = $filter('http_params_str')(params);
 			else
 				var params_str ="";
-			var url  = "http://leave.splifetech.com/leave/service.php?action=";
+			var url  = SERVICE_PATH + "?action=";
 			url = url + action;
 			url = url +"&table=" + table;
 			if(params_str.length > 0)
@@ -39,6 +53,13 @@ angular.module("sick.filter", [])
 			return Math.floor(days * 10)/10;
 		}
 	})
+	.filter("daysToMins", function(){
+		return function (days)
+		{
+			var minutes = days * 8 * 60;
+			return minutes;
+		}
+	})
 	.filter("leaveDays", function(){
 		return function (minutes)
 		{
@@ -47,15 +68,20 @@ angular.module("sick.filter", [])
 			return Math.floor( minutes / (8 * 60) );
 		}
 	})
-	.filter("leaveStatus", function(){
-		return function( left, leaveItem)
-		{
-
-			if(!angular.isObject(leaveItem) && leaveItem != null && (leaveItem.TotalQty -  leaveItem.Used) < left)
-				return "ลาเกินสิทธิ์ กรุณาตรวจสอบวันลาอีกครั้ง"
-			return "";
-		}
-	})
+	.filter("leaveStatus", ['$filter', function($filter){
+			return function( left, leaveItem)
+			{
+				var extra = "";
+				if(leaveItem != null )
+				{
+					console.log( (leaveItem.TotalQty -  leaveItem.Used) )
+					extra +=  (leaveItem.TotalQty -  leaveItem.Used)
+				}
+				if(leaveItem != null && (leaveItem.TotalQty -  leaveItem.Used) < left)
+					return COnfig.errorText + $filter('minToDays')(leaveItem.TotalQty -  leaveItem.Used) +" วัน กรุณาตรวจสอบวันลาอีกครั้ง"
+				return "";
+			}
+		}])
 	.filter("leaveHours", function(){
 		return function (minutes)
 		{
@@ -69,20 +95,24 @@ angular.module("sick.filter", [])
 			return minutes % 60;
 		}
 	})
+
 	.filter("timeHoliday", function(){
 		var period_holidays = [0, 6];
-		var holiday_date = 0;
+		
 		return function (date_time_from, date_time_to, holiday_list)
 		{
-
+			console.log('do time holiday')
 			//Working on it
-		/*	date_time_to.setHours(0);
+			var holiday_date = 0;
+			date_time_to.setHours(0);
 			date_time_from.setHours(0);
 			date_time_to.setMinutes(0);
 			date_time_from.setMinutes(0);
 			var current_day = date_time_from.getDay();
 			// 5
-			var date_diff = date_time_to.getDate() -  date_time_from.getDate();
+			var _diff_days = date_time_to.getTime() - date_time_from.getTime() ;
+			var date_diff = Math.ceil(_diff_days / (1000 * 3600 * 24));
+			//var date_diff = date_time_to.getDate() -  date_time_from.getDate();
 			holiday_date += Math.floor(date_diff / 7) * period_holidays.length;
 			var last_day = date_diff % 7 
 			last_day += current_day;
@@ -92,19 +122,27 @@ angular.module("sick.filter", [])
 				for(var i = 0; i < period_holidays.length; i++)
 					if(period_holidays[i] == last_day)
 						holiday_date++;
+			console.log('period_holidays :' + holiday_date);
 			if(angular.isArray(holiday_list))
 			{
+				console.log('gonna deduc')
 				var from_time = date_time_from.getTime();
 				var to_time = date_time_to.getTime();
-				for(var i =0; i < holiday_list.length ;i +)
+				for(var i =0; i < holiday_list.length ;i++)
 				{
+					var isOverLap = false;
 					//check if it's not overlap with period_holiday
-					for(var j=0; j < period_holidays.length; j++)
-
+					for(var j=0; j < period_holidays.length && !isOverLap; j++)
+						isOverLap = (period_holidays[j] == holiday_list[i].getDay() );
+					console.log('holiday : ' + i + " isOverLap : " + isOverLap);
+					if(!isOverLap && from_time <= holiday_list[i].getTime() && to_time >= holiday_list[i].getTime())
+					{
+						holiday_date++;
+					}
 				}
 			}
+			return holiday_date;
 
-*/
 		}
 	})
 	.filter("timeDifferent", function(){
@@ -160,14 +198,7 @@ angular.module("sick.filter", [])
 	})
 
 	.factory("LeaveTypes", function(){
-		var types = [
-			{"name" : "ลาป่วย", "value":"01" },
-			{"name" : "ลากิจ", "value":"02" },
-			{"name" : "ลาพักผ่อน", "value":"03" },
-			{"name" : "ลาคลอด", "value":"04" },
-			{"name" : "ลาบวช", "value":"05" },
-			{"name" : "อื่นๆ", "value":"06" }
-		];
+		var types = Config.leaveTypes;
 		return {
 			getNormal : function()
 			{
@@ -202,16 +233,27 @@ angular.module("sick.filter", [])
 				return answers[type];
 			}
 		}])
-	.filter("sqlToJsDate", function(){
-		return function (sqlDate)
+	
+
+	.filter("isFromMainSite", function(){
+		return function (user)
 		{
-			console.log("====");
-			console.log(sqlDate)
-			var dateParts = sqlDate.split("-");
-			var jsDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2].substr(0,2));
-			return jsDate;
+			return user.Site == "HO";
 		}
 	})
+	.filter('filterHolidayListForMainSite', ['$filter', function ($filter){
+			return function (holidays)
+			{
+				var _holidays = $filter('filter')(holidays, {HO:"1"});
+				var holiday_list = [];
+				for(var i =0; i < _holidays.length; i++)
+				{
+					holiday_list.push($filter('sqlToJsDate')(_holidays[i].HolidayDate));
+				}
+				return holiday_list;
+			}
+		}])
+
 	.filter("minDate", function(){
 		return function (date1, date2)
 		{
@@ -230,6 +272,57 @@ angular.module("sick.filter", [])
 				return date2;
 		}
 	})
+	.filter("stringDigit", function(){
+		return function (number, targetLength) {
+			if(angular.isUndefined(targetLength))
+				targetLength = 2;
+		    var output = number + '';
+		    while (output.length < targetLength) {
+		        output = '0' + output;
+		    }
+		    return output;
+		}
+	
+	})
+	.filter("sqlToJsDate", function(){
+		return function (sqlDate)
+		{
+			
+			var dateParts = sqlDate.split("-");
+			var jsDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2].substr(0,2));
+			console.log(jsDate);
+			return jsDate;
+		}
+	})
+	.filter("jsDateToSqlDate",["$filter", function ($filter){
+			return function (jsDate)
+			{
+				var str_year = $filter('stringDigit')(jsDate.getFullYear());
+				var str_month = $filter('stringDigit')(jsDate.getMonth() + 1);
+				var str_date = $filter('stringDigit')(jsDate.getDate());
+				return str_year + "-" + str_month + "-"+str_date;
+			}
+		}])
+	.filter("jsTimeToSqlTime", ["$filter", function ($filter){
+		return function (jsTime)
+		{
+			var hours = $filter('stringDigit')(jsTime.getHours());
+			var minutes = $filter('stringDigit')(jsTime.getMinutes());
+			var second = $filter('stringDigit')(jsTime.getSeconds());
+			return hours+":"+minutes+":"+second;
+		}
+	}])
+	.filter("documentId", ["$filter", function ($filter){
+			return function (id)
+			{
+				var d = new Date();
+				var thai_year = d.getYear() + 2443;
+				thai_year = thai_year+""
+				var prefix = thai_year.substring(2,4)
+				var string_id = $filter("stringDigit")(id, 5);
+				return prefix + string_id;
+			}
+		}])
 
 angular.module('sick.model', [])
 	.factory("Query", ["$http", "$filter", function ($http, $filter){
@@ -249,6 +342,15 @@ angular.module('sick.model', [])
 				$http.get(url).success(callback);
 				return true;
 			},
+			lastId : function(table, params, callback)
+			{
+				var url = $filter('http_request_url')("last_id", table ,params)
+				$http.get(url).success(callback);
+			},
+			create : function(table, params, callback)
+			{
+				$http.post(SERVICE_PATH, {table:table, action:"create", params:params}).success(callback);
+			}
 
 		}
 	}] )
