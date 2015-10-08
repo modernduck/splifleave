@@ -1,4 +1,6 @@
-﻿angular.module("sick",['ui.bootstrap'])
+﻿angular.module("sick",['ui.bootstrap', 'leave.controller'])
+
+angular.module("sick.filter", [])
 	.filter('http_params_str', function(){
 		return function (params)
 		{
@@ -65,6 +67,44 @@
 		return function (minutes)
 		{
 			return minutes % 60;
+		}
+	})
+	.filter("timeHoliday", function(){
+		var period_holidays = [0, 6];
+		var holiday_date = 0;
+		return function (date_time_from, date_time_to, holiday_list)
+		{
+
+			//Working on it
+		/*	date_time_to.setHours(0);
+			date_time_from.setHours(0);
+			date_time_to.setMinutes(0);
+			date_time_from.setMinutes(0);
+			var current_day = date_time_from.getDay();
+			// 5
+			var date_diff = date_time_to.getDate() -  date_time_from.getDate();
+			holiday_date += Math.floor(date_diff / 7) * period_holidays.length;
+			var last_day = date_diff % 7 
+			last_day += current_day;
+			if(last_day >= 7)
+				holiday_date += period_holidays.length;
+			else
+				for(var i = 0; i < period_holidays.length; i++)
+					if(period_holidays[i] == last_day)
+						holiday_date++;
+			if(angular.isArray(holiday_list))
+			{
+				var from_time = date_time_from.getTime();
+				var to_time = date_time_to.getTime();
+				for(var i =0; i < holiday_list.length ;i +)
+				{
+					//check if it's not overlap with period_holiday
+					for(var j=0; j < period_holidays.length; j++)
+
+				}
+			}
+
+*/
 		}
 	})
 	.filter("timeDifferent", function(){
@@ -159,15 +199,39 @@
 					answers[types[i]["value"]] = types[i]["name"]
 
 				}
-				/*answers["01"] = "ลาป่วย";
-				answers["02"] = "ลากิจ";
-				answers["03"] = "ลาพักผ่อน"
-				answers["04"] = "ลาคลอด"
-				answers["05"] = "ลาบวช"
-				answers["06"] = "อื่นๆ"*/
 				return answers[type];
 			}
 		}])
+	.filter("sqlToJsDate", function(){
+		return function (sqlDate)
+		{
+			console.log("====");
+			console.log(sqlDate)
+			var dateParts = sqlDate.split("-");
+			var jsDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2].substr(0,2));
+			return jsDate;
+		}
+	})
+	.filter("minDate", function(){
+		return function (date1, date2)
+		{
+			if(date1.getTime() > date2.getTime())
+				return date2;
+			else 
+				return date1;
+		}
+	})
+	.filter("maxDate", function(){
+		return function (date1, date2)
+		{
+			if(date1.getTime() > date2.getTime())
+				return date1;
+			else 
+				return date2;
+		}
+	})
+
+angular.module('sick.model', [])
 	.factory("Query", ["$http", "$filter", function ($http, $filter){
 		
 		return {
@@ -188,93 +252,4 @@
 
 		}
 	}] )
-	.controller("TestCtrl", ["$scope", "$filter", "Query", "LeaveTypes", function  ($scope, $filter, Query, LeaveTypes) {
-		// body...
-		$scope.user;
-		$scope.leaves;
-		$scope.leave_types = LeaveTypes.getNormal();
-		$scope.selectedType = null;
-		$scope.minDate = new Date();
-		$scope.minDate.setDate($scope.minDate.getDate() + 1)
-		$scope.maxDate = null;
-		$scope.type;
-		$scope.min_time = new Date();
-		$scope.min_time.setHours(8);
-		$scope.min_time.setMinutes(0);
-		$scope.max_time = new Date();
-		$scope.max_time.setHours(17);
-		$scope.max_time.setMinutes(0);
-
-		$scope.mytime = angular.copy($scope.min_time)
-		$scope.mytime2= angular.copy($scope.max_time)
-		$scope.time_used = 0;
-		
-
-		/*
-		* Happen when change radio type
-		*/
-		$scope.updateType = function()
-		{
-			console.log('update na')
-			console.log($scope.selectedType)
-			console.log(LeaveTypes.isSickLeave($scope.selectedType) )
-			
-			if(LeaveTypes.isSickLeave($scope.selectedType))
-			{
-
-				$scope.minDate = null;
-				$scope.maxDate = new Date();
-				$scope.maxDate.setDate($scope.maxDate.getDate() - 7);
-			}else
-			{
-				$scope.minDate = new Date();
-				$scope.minDate.setDate($scope.minDate.getDate() + 1)
-				$scope.maxDate = null;
-			}
-			$scope.date_time_from = null;
-			$scope.date_time_to = null;
-			$scope.mytime = angular.copy($scope.min_time)
-			$scope.mytime2= angular.copy($scope.max_time)
-		
-		}
-
-		/*
-		* do this when update 
-		*/
-		$scope.updateDateTime = function()
-		{
-			//when update 
-			// &&  typeof($scope.date_time_from) != "undefined" && $scope.date_time_from != null && $scope.date_time_from instanceof Date
-			console.log("update date time");
-			var checker_items = [$scope.mytime, $scope.date_time_from, $scope.date_time_to, $scope.mytime2];
-			var shouldCheckTotal = true;
-			for(var i =0; i < checker_items.length; i++)
-			{
-				//console.log('check no ' + i)
-				if( !(typeof(checker_items[i]) != "undefined" && checker_items[i] instanceof Date) )
-				{
-				//	console.log('break at' + i);
-					shouldCheckTotal = false;
-					break;
-				}
-			}
-			if(shouldCheckTotal)
-			{
-				/*$scope.date_time_from.setHours($scope.mytime.getHours());
-				$scope.date_time_from.setMinutes($scope.mytime.getMinutes());
-
-				$scope.date_time_to.setHours($scope.mytime2.getHours());
-				$scope.date_time_to.getMinutes($scope.mytime2.getMinutes());
-				*/
-				$scope.time_used = $filter('timeDifferent')($scope.date_time_from, $scope.date_time_to, $scope.mytime, $scope.mytime2);
-			}
-		}
-
-		Query.get("l_empltable", {"UserID":"wanich"}, function(user){
-			$scope.user = user;
-			Query.query("l_leavetable", {"EmplID":user.EmplID}, function(leaves){
-				$scope.leaves = leaves;
-			})
-		});
-		$scope.test = "yo";
-	}])
+	

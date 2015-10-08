@@ -8,17 +8,28 @@ require("./query.php");
 
 $action = $_GET['action'];
 $table = $_GET['table'];
-$params = $_GET['params'];
+
 
 if($action == "query")
 {
+	$params = $_GET['params'];
 	$query = new Query($table);
 	echo json_encode($query->selectAll($params));
 }else if($action == "get")
 {
+	$params = $_GET['params'];
 	$query = new Query($table);
 	$data = $query->selectOne($params);
 	echo json_encode($data);
+	
+}else if($action == "update")
+{
+
+}else if($action == "create")
+{
+
+}else if($action == "upload")
+{
 	
 }
 

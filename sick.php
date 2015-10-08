@@ -35,9 +35,10 @@ showhead("../");
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.13.4/ui-bootstrap.min.js"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.13.4/ui-bootstrap-tpls.min.js"></script>
 <script type="text/javascript" src="./main.js"></script>
+<script type="text/javascript" src="./leave.ctrl.js"></script>
 <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
 
-<section ng-app="sick" ng-controller="TestCtrl">
+<section ng-app="sick" ng-controller="LeaveCtrl">
 
 <form name="form1" topmargin=0  id="form1" method="post" action="" >
 <input type=hidden name=frmhide id=frmhide value="">
@@ -119,7 +120,7 @@ showhead("../");
 		      <input type="text"  ng-model="date_time_from" required  ng-show="false"  />
 		      
 		    </div>
-		    <span style="font-size:1.5em;">{{date_time_from | date:"dd-MMMM-yyyy"}}</span> 
+		    <span style="font-size:1.5em;">{{date_time_from | date:"dd/MM/yyyy"}}</span> 
 		 	
 
 		</td> 	
@@ -128,7 +129,7 @@ showhead("../");
 	 <tr>
 	 	<td>เวลา</td>
 	 	<td>
-	 		<timepicker ng-change="updateDateTime()" ng-model="mytime"  hour-step="1" minute-step="30" show-meridian="true" min="min_time" max="max_time"></timepicker>
+	 		<timepicker ng-change="updateDateTime()" ng-model="mytime"  hour-step="1" minute-step="30" show-meridian="false" min="min_time" max="max_time"></timepicker>
 		 	
 
 	 	</td>
@@ -150,7 +151,7 @@ showhead("../");
 		      <input type="text"  ng-model="date_time_to" required  ng-show="false"  />
 		      
 		    </div>
-		    <span style="font-size:1.5em;">{{date_time_to | date:"dd-MMMM-yyyy"}}</span> 
+		    <span style="font-size:1.5em;">{{date_time_to | date:"dd/MM/yyyy"}}</span> 
 		 	
 
 		</td> 	
@@ -159,7 +160,7 @@ showhead("../");
 	 <tr>
 	 	<td>เวลา</td>
 	 	<td>
-	 		<timepicker ng-change="updateDateTime()" ng-model="mytime2"  hour-step="1" minute-step="30" show-meridian="true" min="min_time" max="max_time"></timepicker>
+	 		<timepicker ng-change="updateDateTime()" ng-model="mytime2"  hour-step="1" minute-step="30" show-meridian="false" min="min_time" max="max_time"></timepicker>
 		 	
 
 	 	</td>
