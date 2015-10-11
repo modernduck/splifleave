@@ -191,24 +191,31 @@
 			 
 		 </tr>
 		 <tr>
-			 <td> <label ng-repeat="n in approvers_choices">
-		          <input  ng-disabled="!$parent.item.isApprover" type="radio" name="pageNumber" ng-model="$parent.item.selectedChoice" ng-value="n"  /> {{n.name}} 
-		         </label>
-		         
+			 <td> 
+
+			 	<label><input ng-disabled="!item.isApprover || item.disable" type="radio" name="approve-{{item.id}}" ng-model="item.selectedChoice" ng-value="approvers_choices[0]">{{approvers_choices[0].name}}</label>
+
+				<label><input ng-disabled="!item.isApprover || item.disable" type="radio" name="approve-{{item.id}}" ng-model="item.selectedChoice" ng-value="approvers_choices[1]">{{approvers_choices[1].name}}</label>
+
+				<label><input  ng-disabled="!item.isApprover || item.disable" type="radio" name="approve-{{item.id}}" ng-model="item.selectedChoice" ng-value="approvers_choices[2]">{{approvers_choices[2].name}}</label>
+
+			 	<!--<select ng-disabled="!item.isApprover || item.disable" ng-options="n.name for n in approvers_choices" ng-model="item.selectedChoice"></select>-->
+			 	 
 		     </td>
 			
 		 </tr>
 		 <tr>
 			 <td>
 			 	หมายเหตุเพิ่มเติม<br/>
-			 	<textarea ng-disabled="!item.isApprover" class="form-control" ng-model="item.mark"></textarea>
+			 	<textarea ng-disabled="!item.isApprover || item.disable" class="form-control" ng-model="item.mark"></textarea>
 
 			 </td>		 
 		 </tr>
 		 <tr>
 			 <td><br/>
-			 	<button ng-click="approve(item)"  ng-disabled="!item.isApprover" class='btn btn-primary'>ยืนยัน</button>
-
+			 	<button ng-click="approve(item)"  ng-disabled="!item.isApprover || item.disable" class='btn btn-primary'>ยืนยัน</button>
+			 
+			 	
 			 </td>		 
 		 </tr>
 

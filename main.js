@@ -33,6 +33,15 @@ var Config = {
 		{"id":"3", "name": "กลับไปแก้ไข", "value":"5"}
 
 	],
+	getApproveChoice : function(value)
+	{
+		for(var i =0; i < approver_choices.length; i++)	
+		{
+			if(approver_choices[i].value == value)
+				return approver_choices[i]
+		}
+		return null;
+	},
 	LEAVE_DENIED_ACCESS_MESSAGE :
 	{
 		"CANCLED":"ใบลาถูกยกเลิกโดยเจ้าของแล้ว"
@@ -477,6 +486,11 @@ angular.module('sick.model', [])
 				var url = $filter('http_request_url')("approve_status", "nope" ,params)
 				$http.get(url).success(callback);
 
+			},
+			approve : function(params, callback)
+			{
+				var url = $filter('http_request_url')("approve", "l_approvetrans" ,params)
+				$http.get(url).success(callback);
 			}
 
 		}

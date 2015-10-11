@@ -229,7 +229,9 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 				approve_obj.Approve = approve_item.user.EmplID;
 				approve_obj.Status = approve_item.selectedChoice.value;
 				approve_obj.Remark = approve_item.mark;
-				Query.create("l_approvetrans", approve_obj, function(data){
+
+				approve_obj.EmplID = $scope.user.EmplID
+				Query.approve( approve_obj, function(data){
 					alert(approve_item.selectedChoice.name + "เรียบร้อย");
 				})
 
@@ -237,15 +239,27 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 			
 		}
 
-		$scope.loadApprovData = function(approve, data_approve)
+		$scope.loadApprovData = function(index, data_approve)
 		{
+			
 			if(data_approve !== null)
 			{
-				approve.mark = data_approve.Remark;
-				for(var i =0; i < $scope.approvers_choices.length ;i++)
+				console.log("---data_approve-- at index " + index)
+				console.log(data_approve)
+				$scope.approvers[index].mark = data_approve.Remark;
+				for(var i =0; i < Config.approver_choices.length ;i++)
+				{
+					console.log(Config.approver_choices[i].value + "vs " + data_approve.Status + " = " + ($scope.approvers_choices[i].value == data_approve.Status))
+
 					if(Config.approver_choices[i].value == data_approve.Status)
-						approve.selectedChoice = $scope.approvers_choices[i]
-				approve.disable = true;
+					{
+
+						$scope.approvers[index].selectedChoice = $scope.approvers_choices[i]
+						console.log("result at " + i + " should be" + $scope.approvers_choices[i])
+						console.log($scope.approvers[index].selectedChoice)
+					}
+				}
+				//approve.disable = true;
 			}
 		}
 
@@ -258,6 +272,8 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 						$scope.holidays = holidays;
 						Query.get("l_leavetrans", {"LeaveTransID": $routeParams.id}, function (obj){
 							$scope.checkAccess(obj);
+							$scope.DocStatus = obj.Status;
+
 							Query.get("l_empltable", {"EmplID":obj.EmplID}, function(user){
 								$scope.user = user;
 
@@ -291,7 +307,7 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 									Query.get("l_approverlist", {"EmplID":user.EmplID}, function (data){
 										if(data.Approver1 != null)
 										{
-											$scope.approvers[0] = {show:true, disable:false}
+											$scope.approvers[0] = {show:true, disable:false, id:"1"}
 											
 											Query.get("l_empltable", {"EmplID":data.Approver1}, function (approver1)
 											{
@@ -306,16 +322,14 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 
 											});
 											Query.getApproveStatus({LeaveTransID: $scope.LeaveTransID, Approve:data.Approver1}, function(data_approve){
-												console.log('yo approval')
-												console.log(data_approve)
-												$scope.loadApprovData($scope.approvers[0], data_approve);
+												$scope.loadApprovData(0, data_approve);
 											}) 
 
 										}else
 											$scope.approvers[0] = {show:false}
 										if(data.Approver2 != null)
 										{
-											$scope.approvers[1] = {show:true, disable:false}
+											$scope.approvers[1] = {show:true, disable:false, id:"2"}
 											Query.get("l_empltable", {"EmplID":data.Approver2}, function (approver2)
 											{
 												$scope.approvers[1].user = approver2;
@@ -325,12 +339,15 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 												else
 													$scope.approvers[1].isApprover = false;
 											});
+											Query.getApproveStatus({LeaveTransID: $scope.LeaveTransID, Approve:data.Approver2}, function(data_approve){
+												$scope.loadApprovData(1, data_approve);
+											}) 
 										}else
 											$scope.approvers[1] = {show:false}
 
 										if(data.Approver3 != null)
 										{
-											$scope.approvers[2] = {show:true, disable:false}
+											$scope.approvers[2] = {show:true, disable:false, id:"3"}
 											Query.get("l_empltable", {"EmplID":data.Approver3}, function (approver3)
 											{
 												$scope.approvers[2].user = approver3;
@@ -339,6 +356,9 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 												else
 													$scope.approvers[2].isApprover = false;
 											});
+											Query.getApproveStatus({LeaveTransID: $scope.LeaveTransID, Approve:data.Approver3}, function(data_approve){
+												$scope.loadApprovData(2, data_approve);
+											}) 
 										}else
 											$scope.approvers[2] = {show:false}
 									})
