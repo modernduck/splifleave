@@ -13,7 +13,7 @@ class Query{
 
    }
 
-	public function selectAll($params)
+	public function selectAll($params, $orderBy = null)
 	{
 
 		if(count($params) == 0)
@@ -41,6 +41,7 @@ class Query{
 		}
 		$sql = "select * from {$this->table} $condition";
 		mysql_query("SET NAMES 'utf8'");
+		
 		$dbquery = mysql_query($sql);
 		//$result= mysql_fetch_array($dbquery);
 		
@@ -50,7 +51,7 @@ class Query{
 		return $result;
 	}
 
-	public function selectOne($params)
+	public function selectOne($params, $orderBy = null)
 	{
 		if(count($params) == 0)
 			$condition = "";
@@ -154,8 +155,10 @@ class Query{
 				$counter++;
 			}
 			$sql = "UPDATE {$this->table} SET $command WHERE {$condition}";
+
 			$result = mysql_query($sql);
 			return $result;
+			//return $sql;
 		}else
 		{
 			$counter = 0;
@@ -176,6 +179,7 @@ class Query{
 			mysql_query("SET NAMES 'utf8'");
 			$result = mysql_query($sql);
 			return $result;
+			//return $sql;
 		}
 	}
 

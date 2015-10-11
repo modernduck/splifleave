@@ -1,0 +1,285 @@
+<section >
+
+
+	<input type=hidden name=frmhide id=frmhide value="">
+	<input type=hidden name=orderby id=orderby value="<?=$_POST[orderby];?>">
+	<input type=hidden name=orderdirection id=orderdirection value="<?=$_POST[orderdirection];?>">
+	<input type=hidden name=ordercolumn id=ordercolumn value="<?=$_POST[ordercolumn];?>">
+
+	<br>
+	<!-- #############  รายละเอียดพนักงาน ################# -->
+	<div align=center style="padding:10px 0px 10px 0px;" align=center>
+	<fieldset style="width:80%" align=left>
+	<legend>
+
+	<table  border=0><tr><td align=center><b>รายละเอียดพนักงาน</b></td></table></legend>
+	<form ng-submit="saveForm()">
+	     <table style="width:80%" align=center>
+		  <tr>
+			  <td width="10%"></td>
+			 <td width="30%"></td>
+			 <td width="10%">รหัสเอกสาร</td>
+			 <td width="30%">{{ LeaveTransID }}<input type=hidden  name=""  value="" ></td>
+			 <td width="10%"></td>
+			 <td width="20%"></td>
+		 </tr>
+		  <tr>
+			 <td>ชื่อพนักงาน</td>
+			 <td>{{user.NameThai}}<input type="hidden"  name="" value="" ></td>
+			 <td>รหัส</td>
+			 <td>{{user.EmplID}}<input type=hidden  name=""  value="" ></td>
+			 <td>วันที่เริ่มงาน</td>
+			 <td>{{user.StartDate | date:'dd/MM/yyyy'}}<input type=hidden  name=""  value="" ></td>
+		 </tr>
+		 <tr>
+			 <td>แผนก</td>
+			 <td>{{user.Department2}}<input type="hidden"  name="" value="" ></td>
+			 <td>ตำแหน่ง</td>
+			 <td>{{user.EmplLevel}}<input type="hidden"  name="" value="" ></td>
+			 <td></td>
+			 <td></td>
+		 </tr>
+		   <tr>
+			 <td colspan="6"> <span ng-repeat="item in leaves"> {{item.LeaveType | leaveType}} {{item.TotalQty -  item.Used | minToDays}} วัน </span></td>
+			 
+		 </tr>
+			</table>
+			</form>	 
+				 			
+	  	</fieldset>
+	</div>
+
+	<!-- #############  รายละเอียดการลา ################# -->
+	<div align=center style="padding:10px 0px 10px 0px;" align=center>
+	<fieldset style="width:80%" align=left>
+	<legend>
+	<table  border=0><tr><td align=center><b>รายละเอียดการลา</b></td></table></legend>
+	     <table style="width:80%" align=center>
+		  <tr>
+			 <td width="20%"> </td>
+			 <td ng-hide="!isOwner">
+			 	
+			 	 <label ng-repeat="n in leaves">
+		          <input ng-disabled="!isOwner" type="radio" name="pageNumber" ng-model="$parent.selectedType" ng-value="n" ng-click="updateType()" /> {{n.LeaveType | leaveType}} 
+		         </label>
+		         
+			 </td>
+			 <td ng-show="!isOwner">
+			 	<label><input disable type="radio" checked /> {{selectedType.LeaveType | leaveType}}</label>
+			 </td>
+			 
+		 </tr>
+		 <tr ng-show="selectedType!=null">
+		 	<td colspan="2"><h4>เริ่มลา</h4></td>
+		 </tr>
+		 <tr ng-show="selectedType!=null">
+		 	<td>
+		 		วันที่ 
+		 	</td>
+			 <td>
+			 	<a ng-hide="!isOwner" href="" style="color:white;" class="btn btn-primary" ng-click="isShowDate = true;" ng-hide="isShowDate">เลือกวัน </a>
+			 	
+			 	<div style="display:inline-block; min-height:290px;position:relative" ng-show="isShowDate">
+			      <datepicker  ng-change="updateDateTime()" ng-model="date_time_from" min-date="minDate" max-date="maxDate" show-weeks="true" class="well well-sm" ></datepicker>
+			      <a class="btn btn-primary"  style="width:100%;color:white;" ng-click="isShowDate = false;steps[1]=true;" href="">ปิด</a>
+			      <input type="text"  ng-model="date_time_from" required  ng-show="false"  />
+			      
+			    </div>
+			    <span style="font-size:1.5em;">{{date_time_from | date:"dd/MM/yyyy"}}</span> 
+			 	
+
+			</td> 	
+			
+		 </tr>
+		 <tr ng-show="selectedType!=null">
+		 	<td>เวลา</td>
+		 	<td>
+		 		<timepicker ng-hide="!isOwner" ng-change="updateDateTime()" ng-model="mytime"  hour-step="1" minute-step="30" show-meridian="false" min="min_time" max="max_time"></timepicker>
+			 	<span style="font-size:1.5em;" ng-hide="isOwner">{{mytime.getHours() | stringDigit}} : {{mytime.getMinutes() | stringDigit}}</span>
+
+
+		 	</td>
+
+		 </tr>
+		  <tr ng-show="steps[1]">
+		 	<td colspan="2"><h4>ถึง</h4></td>
+		 </tr>
+		 <tr ng-show="steps[1]">
+		 	<td>
+		 		วันที่ 
+		 	</td>
+			 <td>
+			 	<a ng-hide="!isOwner" href="" style="color:white;" class="btn btn-primary" ng-click="isShowDate2 = true;" ng-hide="isShowDate2">เลือกวัน </a>
+			 	
+			 	<div style="display:inline-block; min-height:290px;position:relative" ng-show="isShowDate2">
+			      <datepicker  ng-change="updateDateTime()" ng-model="date_time_to" min-date="date_time_from" show-weeks="true" class="well well-sm" ></datepicker>
+			      <a class="btn btn-primary"  style="width:100%;color:white;" ng-click="isShowDate2 = false;steps[2]=true;" href="">ปิด</a>
+			      <input type="text"  ng-model="date_time_to" required  ng-show="false"  />
+			      
+			    </div>
+			    <span style="font-size:1.5em;">{{date_time_to | date:"dd/MM/yyyy"}}</span> 
+			 	
+
+			</td> 	
+			
+		 </tr>
+		 <tr ng-show="steps[1]">
+		 	<td>เวลา</td>
+		 	<td>
+		 		<timepicker ng-hide="!isOwner" ng-change="updateDateTime()" ng-model="mytime2"  hour-step="1" minute-step="30" show-meridian="false" min="min_time" max="max_time"></timepicker>
+		 		<span style="font-size:1.5em;" ng-hide="isOwner">{{mytime2.getHours() | stringDigit}} : {{mytime2.getMinutes() | stringDigit}}</span>
+		 	</td>
+
+		 </tr>
+
+		 <tr ng-show="steps[2]">
+		 <td></td>
+			 <td>รวม จำนวน {{time_used | leaveDays}} วัน {{time_used | leaveHours}} ชั่วโมง {{time_used | leaveMinutes}} นาที <span style="color:red;">{{time_used | leaveStatus:selectedType}} </span></td>		 
+		 </tr>
+		 <tr ng-show="steps[2]">
+			 <td>หมายเหตุการลา  </td>
+			<td></td>		 
+		 </tr>
+		 <tr ng-show="steps[2]">
+		 	<td></td>
+			 <td><textarea  ng-disabled="!isOwner"  class="form-control" ng-model="description"></textarea></td>		 
+		 </tr>
+		 <tr ng-show="steps[2]">
+		 	<td></td>
+			 <td>เอกสารแนบ <input type="file" /></td>		 
+		 </tr>
+		 <tr ng-show="steps[2]">
+		 	<td></td>
+			 <td>เอกสารแนบ <input type="file" /></td>		 
+		 </tr>
+		 <tr ng-show="steps[2]">
+		 	<td></td>
+			 <td>เอกสารแนบ <input type="file" /></td>		 
+		 </tr ng-show="steps[2]">	
+		 <tr ng-show="steps[2] && isOwner">
+		 	<td></td>
+		 	<td>
+		 		<div class="row">
+		 			<div class="col-md-4">
+		 				<input  ng-click="saveForm(1)" type="button" class="btn btn-success" value="บันทึก" style="width:100%;">
+		 			</div>
+		 			<div class="col-md-4">
+		 				<input  ng-click="saveForm(2)" type="button" class="btn btn-primary" value="ส่งใบลา" style="width:100%;">
+		 			</div>
+		 			<div class="col-md-4">
+		 				<input  ng-click="saveForm(7)" type="button" class="btn btn-danger" value="ยกเลิก" style="width:100%;">
+		 			</div>
+		 		</div>
+
+		 	</td> 
+		 </tr>
+			</table>
+		</form> 
+				 
+				
+	  	</fieldset>
+	</div>
+
+	<!-- #############  ผู้อนุมัติลำดับที่ 1 ################# -->
+	<div ng-repeat="item in approvers" ng-show="item.show" align=center style="padding:10px 0px 10px 0px;" align=center>
+	<fieldset style="width:80%" align=left>
+	<legend>
+	<table  border=0><tr><td align=center><b>ผู้อนุมัติ</b></td></table></legend>
+	     <table style="width:80%" align=center>
+		  <tr>
+			 <td width="10%"> {{item.user.NameThai}}</td>
+			 
+		 </tr>
+		 <tr>
+			 <td> <label ng-repeat="n in approvers_choices">
+		          <input  ng-disabled="!$parent.item.isApprover" type="radio" name="pageNumber" ng-model="$parent.item.selectedChoice" ng-value="n"  /> {{n.name}} 
+		         </label>
+		         
+		     </td>
+			
+		 </tr>
+		 <tr>
+			 <td>
+			 	หมายเหตุเพิ่มเติม<br/>
+			 	<textarea ng-disabled="!item.isApprover" class="form-control" ng-model="item.mark"></textarea>
+
+			 </td>		 
+		 </tr>
+		 <tr>
+			 <td><br/>
+			 	<button ng-click="approve(item)"  ng-disabled="!item.isApprover" class='btn btn-primary'>ยืนยัน</button>
+
+			 </td>		 
+		 </tr>
+
+		 </table>
+			
+	  	</fieldset>
+	</div>
+	<!-- #############  ผู้อนุมัติลำดับที่ 2 ถ้ามี จึงจะให้แสดง ################# -->
+	<!--<div align=center style="padding:10px 0px 10px 0px;" align=center>
+	<fieldset style="width:80%" align=left>
+	<legend>
+	<table  border=0><tr><td align=center><b>ผู้อนุมัติ</b></td></table></legend>
+	     <table style="width:80%" align=center>
+		  <tr>
+			 <td width="10%"> ชื่อผู้อนุม้ติ</td>
+			 
+		 </tr>
+		 <tr>
+			 <td> เป็น radio ให้เลือกว่า อนุมัติ , ไม่อนุม้ติ , กลับไปแก้ไข </td>
+			
+		 </tr>
+		 <tr>
+			 <td>หมายเหตุเพิ่มเติม</td>		 
+		 </tr>
+		 </table>
+			
+	  	</fieldset>
+	</div>
+
+	<!-- #############  ผู้อนุมัติลำดับที่ 3 ถ้ามี จึงจะให้แสดง ################# -->
+	<!--<div align=center style="padding:10px 0px 10px 0px;" align=center>
+	<fieldset style="width:80%" align=left>
+	<legend>
+	<table  border=0><tr><td align=center><b>ผู้อนุมัติ</b></td></table></legend>
+	     <table style="width:80%" align=center>
+		  <tr>
+			 <td width="10%"> ชื่อผู้อนุม้ติ</td>
+			 
+		 </tr>
+		 <tr>
+			 <td> เป็น radio ให้เลือกว่า อนุมัติ , ไม่อนุม้ติ , กลับไปแก้ไข </td>
+			
+		 </tr>
+		 <tr>
+			 <td>หมายเหตุเพิ่มเติม</td>		 
+		 </tr>
+		 </table>
+			
+	  	</fieldset>
+	</div>
+
+	<!-- #############  HR ################# -->
+	<!--<div align=center style="padding:10px 0px 10px 0px;" align=center>
+	<fieldset style="width:80%" align=left>
+	<legend>
+	<table  border=0><tr><td align=center><b>แผนกบุคคลผู้รับเรื่อง</b></td></table></legend>
+	     <table style="width:80%" align=center>
+		  <tr>
+			 <td width="10%"> ชื่อผู้รับเรื่อง</td>
+			 <td></td>
+		 </tr>
+		 <tr>
+			 <td> เป็น checkbox เขียนว่า "รับทราบ" </td>
+			  <td> ขึ้นวันที่ </td>
+		 </tr>
+		 <tr>
+			 <td>หมายเหตุเพิ่มเติม</td>	
+			<td></td>		 
+		 </tr>
+		 </table>
+			
+	  	</fieldset>
+	</div>-->
+</section>

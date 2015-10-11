@@ -1,6 +1,6 @@
 ﻿var SERVICE_PATH = "http://leave.splifetech.com/leave/service.php";
 var Config = {
-	errorText : "ลาเกินสิทธิ์ ",
+	errorText : "ลาเกินสิทธิ์ กรุณาตรวจสอบวันลาอีกครั้ง",
 	leaveTypes : [
 			{"name" : "ลาป่วย", "value":"01" },
 			{"name" : "ลากิจ", "value":"02" },
@@ -9,10 +9,53 @@ var Config = {
 			{"name" : "ลาบวช", "value":"05" },
 			{"name" : "อื่นๆ", "value":"06" }
 	],
+	mainSite : "HO",
+	mininumLeaves : {
+		"01":(4 * 60),
+		"02":30,
+		"03":(4 * 60),
+		"04":(8 * 60),
+		"05":(8 * 60),
+		"06":30,
+	},
+	STATUS :{
+		"DRAFT":1,
+		"SENDED":2,
+		"CANCLED":7,
+		"APPROVED":3,
+		"DENIED":4,
+		"REJECTED":5
+
+	},
+	approver_choices : [
+		{"id":"1", "name": "อนุมัติ", "value":"3"},
+		{"id":"2", "name": "ไม่อนุมัติ", "value":"4"},
+		{"id":"3", "name": "กลับไปแก้ไข", "value":"5"}
+
+	],
+	LEAVE_DENIED_ACCESS_MESSAGE :
+	{
+		"CANCLED":"ใบลาถูกยกเลิกโดยเจ้าของแล้ว"
+	},
+	DONT_FORGET :{
+		APPROVE : "กรณาเลือกว่าจะ อนุมัติ ไม่อนุมัติ หรือ กลับไปแก้ไข"
+
+	}
 
 }
 
-angular.module("sick",['ui.bootstrap', 'leave.controller'])
+angular.module("sick",['ui.bootstrap', 'leave.controller', 'ngRoute'])
+	.config(["$routeProvider", function ($routeProvider){
+		$routeProvider.
+			when('/', {
+				templateUrl:'create.html',
+				controller:'LeaveCtrl'
+			}).
+			when('/read/:id', {
+				templateUrl:"read.html",
+				controller:"LeaveReadCtrl"
+			})
+	}])
 
 angular.module("sick.filter", [])
 	.filter('http_params_str', function(){
@@ -74,11 +117,11 @@ angular.module("sick.filter", [])
 				var extra = "";
 				if(leaveItem != null )
 				{
-					console.log( (leaveItem.TotalQty -  leaveItem.Used) )
+					//console.log( (leaveItem.TotalQty -  leaveItem.Used) )
 					extra +=  (leaveItem.TotalQty -  leaveItem.Used)
 				}
 				if(leaveItem != null && (leaveItem.TotalQty -  leaveItem.Used) < left)
-					return COnfig.errorText + $filter('minToDays')(leaveItem.TotalQty -  leaveItem.Used) +" วัน กรุณาตรวจสอบวันลาอีกครั้ง"
+					return Config.errorText;
 				return "";
 			}
 		}])
@@ -97,10 +140,12 @@ angular.module("sick.filter", [])
 	})
 
 	.filter("timeHoliday", function(){
-		var period_holidays = [0, 6];
+		//var period_holidays = [0, 6];
 		
-		return function (date_time_from, date_time_to, holiday_list)
+		return function (date_time_from, date_time_to, holiday_list, period_holidays)
 		{
+			if(angular.isUndefined(period_holidays))
+				period_holidays = [0, 6];
 			console.log('do time holiday')
 			//Working on it
 			var holiday_date = 0;
@@ -122,7 +167,7 @@ angular.module("sick.filter", [])
 				for(var i = 0; i < period_holidays.length; i++)
 					if(period_holidays[i] == last_day)
 						holiday_date++;
-			console.log('period_holidays :' + holiday_date);
+			console.log('period_holidays :' + holiday_date + " / " + JSON.stringify(period_holidays));
 			if(angular.isArray(holiday_list))
 			{
 				console.log('gonna deduc')
@@ -209,7 +254,18 @@ angular.module("sick.filter", [])
 			},
 			isSickLeave : function(selectedType)
 			{
+				console.log('check sick')
+				console.log(selectedType.LeaveType)
+				console.log(types[0].value)
 				if(selectedType.LeaveType == types[0].value)
+					return true;
+				return false;
+			},
+			isHolidayLeave : function(selectedType)
+			{
+				console.log('check holiday')
+				console.log(selectedType)
+				if(selectedType.LeaveType == types[2].value)
 					return true;
 				return false;
 			},
@@ -217,6 +273,12 @@ angular.module("sick.filter", [])
 			get : function()
 			{
 				return types;
+			},
+			find : function(type)
+			{
+				for(var i =0; i < types.length; i++)
+					if(type == types[i].value)
+						return types[i];
 			}
 		}
 	})
@@ -238,13 +300,21 @@ angular.module("sick.filter", [])
 	.filter("isFromMainSite", function(){
 		return function (user)
 		{
-			return user.Site == "HO";
+			return user.Site == Config.mainSite;
 		}
 	})
-	.filter('filterHolidayListForMainSite', ['$filter', function ($filter){
-			return function (holidays)
+	.filter('filterHolidayList', ['$filter', function ($filter){
+			return function (holidays, site, value)
 			{
-				var _holidays = $filter('filter')(holidays, {HO:"1"});
+				if(angular.isUndefined(site))
+					site = Config.mainSite
+				if(angular.isUndefined(value))
+					value = "1";
+				console.log('gonna filter')
+				var obj = {}
+				obj[site] = value
+				console.log(obj)
+				var _holidays = $filter('filter')(holidays, obj);
 				var holiday_list = [];
 				for(var i =0; i < _holidays.length; i++)
 				{
@@ -294,6 +364,17 @@ angular.module("sick.filter", [])
 			return jsDate;
 		}
 	})
+	.filter("sqlToJsTime", function(){
+		return function (sqlTime)
+		{
+			var raw = sqlTime.split(":");
+			var d = new Date();
+			d.setHours(raw[0])
+			d.setMinutes(raw[1])
+			d.setSeconds(raw[2])
+			return d;
+		}
+	})
 	.filter("jsDateToSqlDate",["$filter", function ($filter){
 			return function (jsDate)
 			{
@@ -323,6 +404,30 @@ angular.module("sick.filter", [])
 				return prefix + string_id;
 			}
 		}])
+	.filter("checkPassMinimum", function() {
+		return function (time_used, type )
+		{
+			var minimum = Config.mininumLeaves[type]
+			if(angular.isNumber(minimum))
+			{
+				if(time_used >= minimum)
+					return {status:true, message:"pass"};
+				else
+					return {status:false, message:"not pass", minimum:minimum}
+			}else
+				return {status:true, message:"no minimum setting on this type"}
+		}
+	})
+	.filter("minimumStatus", ["$filter", function ($filter){
+		return function (time_used, type)
+		{
+			var result = $filter("checkPassMinimum")(time_used, type);
+			if(!result.status)
+				return "ต้องลาขั้นต่ำ " + result.minimum + " นาที"
+			else
+				return "";
+		}
+	}])
 
 angular.module('sick.model', [])
 	.factory("Query", ["$http", "$filter", function ($http, $filter){
@@ -350,8 +455,33 @@ angular.module('sick.model', [])
 			create : function(table, params, callback)
 			{
 				$http.post(SERVICE_PATH, {table:table, action:"create", params:params}).success(callback);
+			},
+			update : function(table, params, callback)
+			{
+				if(angular.isUndefined(params.condition))
+					$http.post(SERVICE_PATH, {table:table, action:"update", params:params}).success(callback);
+				else
+				{
+					var cond = params.condition
+					delete(params.condition)
+					$http.post(SERVICE_PATH, {table:table, action:"update", params:params, condition:cond}).success(callback);
+				}
+			},
+			getUser : function(callback)
+			{
+				var url = $filter('http_request_url')("user", "test", {});
+				$http.get(url).success(callback);
+			},
+			getApproveStatus : function(params, callback)
+			{
+				var url = $filter('http_request_url')("approve_status", "nope" ,params)
+				$http.get(url).success(callback);
+
 			}
 
 		}
 	}] )
+	.factory("Config", function(){
+		return Config;
+	})
 	

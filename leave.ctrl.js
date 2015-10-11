@@ -1,5 +1,5 @@
 angular.module("leave.controller", ['sick.model', 'sick.filter'])
-	.controller('LeaveCtrl', ["$scope", "$filter", "Query", "LeaveTypes", function  ($scope, $filter, Query, LeaveTypes) {
+	.controller('LeaveCtrl', ["$scope", "$filter", "Query", "LeaveTypes", "$location" , function  ($scope, $filter, Query, LeaveTypes, $location) {
 		// body...
 		$scope.user;
 		$scope.leaves;
@@ -37,7 +37,14 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 				$scope.maxDate = $filter('sqlToJsDate')($scope.selectedType.EndDate);
 				$scope.maxDate = $filter('minDate')($scope.maxDate, new Date())
 				$scope.maxDate.setDate($scope.maxDate.getDate() - 7);
-			}else
+			}else if(LeaveTypes.isHolidayLeave($scope.selectedType))
+			{
+				console.log("is holidays")
+				$scope.minDate = new Date()
+				$scope.minDate.setDate($scope.minDate.getDate() + 1);
+				$scope.maxDate = $filter('sqlToJsDate')($scope.selectedType.EndDate);
+			}
+			else
 			{
 				$scope.minDate = new Date();
 				$scope.minDate.setDate($scope.minDate.getDate() + 1)
@@ -57,16 +64,12 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 		$scope.updateDateTime = function()
 		{
 			//when update 
-			// &&  typeof($scope.date_time_from) != "undefined" && $scope.date_time_from != null && $scope.date_time_from instanceof Date
-			//console.log("update date time");
 			var checker_items = [$scope.mytime, $scope.date_time_from, $scope.date_time_to, $scope.mytime2];
 			var shouldCheckTotal = true;
 			for(var i =0; i < checker_items.length; i++)
 			{
-				//console.log('check no ' + i)
 				if( !(typeof(checker_items[i]) != "undefined" && checker_items[i] instanceof Date) )
 				{
-				//	console.log('break at' + i);
 					shouldCheckTotal = false;
 					break;
 				}
@@ -77,44 +80,60 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 				
 				if($filter('isFromMainSite')($scope.user))
 				{
-					var holiday_list = $filter('filterHolidayListForMainSite')($scope.holidays);
-				//	console.log(holiday_list);
+					var holiday_list = $filter('filterHolidayList')($scope.holidays, $scope.user.Site);
+					console.log('inverse holiday')
+					console.log($filter('filterHolidayList')($scope.holidays, $scope.user.Site, "0"));
 					var holiday_usage_days = $filter('timeHoliday')($scope.date_time_from, $scope.date_time_to, holiday_list);
-					//var holiday_usage_days = $filter('timeHoliday')($scope.date_time_from, $scope.date_time_to);
-				//	console.log('holiday');
-				//	console.log(holiday_usage_days	);
-
 					$scope.time_used -= $filter("daysToMins")(holiday_usage_days) ;
 
+				}else
+				{
+					console.log('==== branch holiday')
+					console.log($scope.holidays)
+					var holiday_list = $filter('filterHolidayList')($scope.holidays, "Branch");
+					
+					console.log(holiday_list);
+					var holiday_usage_days = $filter('timeHoliday')($scope.date_time_from, $scope.date_time_to, holiday_list, [0]);
+					$scope.time_used -= $filter("daysToMins")(holiday_usage_days) ;					
 				}
 				
 
 			}
 		}
-
-		Query.get("l_empltable", {"UserID":"wanich"}, function(user){
-			$scope.user = user;
-			Query.query("l_leavetable", {"EmplID":user.EmplID}, function(leaves){
-				$scope.leaves = leaves;
-			});
-			Query.query("l_holiday", {}, function (holidays){
-				console.log(holidays);
-				$scope.holidays = holidays;
-				
-			});
-			Query.lastId("l_leavetrans", {"idName":"TransID"}, function (obj){
-				$scope.TransID = Number(obj.TransID) + 1;
-			})
-		});
-
-		$scope.saveForm = function()
+		$scope.init = function()
 		{
-			console.log('====== gonna save la =======');
+			Query.getUser(function(current_user){
+				Query.get("l_empltable", {"UserID":current_user.user}, function(user){
+					$scope.user = user;
+					Query.query("l_leavetable", {"EmplID":user.EmplID}, function(leaves){
+						$scope.leaves = leaves;
+					});
+					Query.query("l_holiday", {}, function (holidays){
+						console.log(holidays);
+						$scope.holidays = holidays;
+						
+					});
+					Query.lastId("l_leavetrans", {"idName":"TransID"}, function (obj){
+						$scope.TransID = Number(obj.TransID) ;
+					})
+				});
+			})
+			
+		}
+
+		$scope.saveForm = function(status)
+		{
 			var obj = {};
+			var result = $filter("checkPassMinimum")($scope.time_used, $scope.selectedType.LeaveType)
+			if(!result.status)
+			{
+				//fail
+
+				return false;
+			}
 			obj.LeaveTransID = $filter('documentId')($scope.TransID);
 			obj.EmplID = $scope.user.EmplID;
-			obj.LeaveID = $scope.selectedType.LeaveType;
-			//if is new version
+			obj.LeaveType = $scope.selectedType.LeaveType;
 			obj.CreateDate = $filter('jsDateToSqlDate')(new Date());
 			obj.LeaveStartDate = $filter('jsDateToSqlDate')($scope.date_time_from);
 			obj.LeaveEndDate = $filter('jsDateToSqlDate')($scope.date_time_to);
@@ -124,21 +143,221 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 			obj.TotalDay = $filter('leaveDays')($scope.time_used);
 			obj.TotalHour = $filter('leaveHours')($scope.time_used);
 			obj.TotalMin = $filter('leaveMinutes')($scope.time_used);
-			obj.Status = 2;
+			obj.Status = status;
 			console.log(obj);
+
 			Query.create('l_leavetrans', obj, function (data){
 				console.log('after create')
 				console.log(data)
+				$location.path("/read/"  + obj.LeaveTransID );
 			})
-		/*	console.log($scope.selectedType.LeaveType);
-			console.log($filter('jsDateToSqlDate')($scope.date_time_from))
-			console.log($filter('jsDateToSqlDate')($scope.date_time_to));
-			console.log($filter('jsTimeToSqlTime')($scope.mytime))
-			console.log($filter('jsTimeToSqlTime')($scope.mytime2))
-			console.log($filter('leaveDays')($scope.time_used) + " days");
-			console.log($filter('leaveHours')($scope.time_used) + " hrs");
-			console.log($filter('leaveMinutes')($scope.time_used) + " mins");
-			console.log($scope.description)*/
 		}
+
+		$scope.init();
+		
+	}])
+	.controller('LeaveReadCtrl', ["$controller", "$scope", "$filter", "$routeParams", "Query", "LeaveTypes", "$location", "Config", function  ($controller, $scope, $filter, $routeParams, Query, LeaveTypes, $location, Config) {
+		// body...
+		angular.extend(this, $controller('LeaveCtrl', {
+			$scope: $scope,
+			$filter: $filter, 
+			$routeParams: $routeParams, 
+			Query: Query, 
+			LeaveTypes: LeaveTypes,
+			$location: $location,
+		}));
+
+		$scope.saveForm = function(status)
+		{
+			var obj = {};
+			var result = $filter("checkPassMinimum")($scope.time_used, $scope.selectedType.LeaveType)
+			if(!result.status)
+			{
+				//fail
+
+				return false;
+			}
+			obj.LeaveTransID = $filter('documentId')($scope.TransID);
+			obj.EmplID = $scope.user.EmplID;
+			obj.LeaveType = $scope.selectedType.LeaveType;
+			obj.CreateDate = $filter('jsDateToSqlDate')(new Date());
+			obj.LeaveStartDate = $filter('jsDateToSqlDate')($scope.date_time_from);
+			obj.LeaveEndDate = $filter('jsDateToSqlDate')($scope.date_time_to);
+			obj.LeaveStartTime = $filter('jsTimeToSqlTime')($scope.mytime);
+			obj.LeaveEndTime = $filter('jsTimeToSqlTime')($scope.mytime2)
+			obj.Description = $scope.description;
+			obj.TotalDay = $filter('leaveDays')($scope.time_used);
+			obj.TotalHour = $filter('leaveHours')($scope.time_used);
+			obj.TotalMin = $filter('leaveMinutes')($scope.time_used);
+			obj.Status = status;
+			console.log(obj);
+			obj.condition = "TransID = " + $scope.TransID;
+			Query.update('l_leavetrans', obj, function (data){
+				console.log('after create')
+				console.log(data)
+				console.log(status)
+				
+				if(status == Config.STATUS.CANCLED)
+					$location.path("/");
+				//else
+				//	$location.path("/read/"  + obj.LeaveTransID );
+			})
+		}
+		$scope.approvers = [];
+		$scope.approvers_choices =  Config.approver_choices;
+		$scope.isOwner = false;
+		$scope.checkAccess = function(obj)
+		{
+			if(obj.Status == Config.STATUS.CANCLED )
+			{
+				alert(Config.LEAVE_DENIED_ACCESS_MESSAGE.CANCLED)
+				$location.path("/");
+			}
+		}
+
+		$scope.approve = function(approve_item)
+		{
+			if(!angular.isObject(approve_item.selectedChoice) || approve_item.selectedChoice == null)
+				alert(Config.DONT_FORGET.APPROVE)
+			else
+			{
+				alert("approve na")
+				console.log(approve_item)
+				//could be uupdate
+				var approve_obj = {}
+				approve_obj.LeaveTransID = $scope.LeaveTransID;
+				approve_obj.Approve = approve_item.user.EmplID;
+				approve_obj.Status = approve_item.selectedChoice.value;
+				approve_obj.Remark = approve_item.mark;
+				Query.create("l_approvetrans", approve_obj, function(data){
+					alert(approve_item.selectedChoice.name + "เรียบร้อย");
+				})
+
+			}
+			
+		}
+
+		$scope.loadApprovData = function(approve, data_approve)
+		{
+			if(data_approve !== null)
+			{
+				approve.mark = data_approve.Remark;
+				for(var i =0; i < $scope.approvers_choices.length ;i++)
+					if(Config.approver_choices[i].value == data_approve.Status)
+						approve.selectedChoice = $scope.approvers_choices[i]
+				approve.disable = true;
+			}
+		}
+
+		$scope.init = function()
+		{
+
+			Query.getUser(function(current_user){	
+
+				Query.query("l_holiday", {}, function (holidays){
+						$scope.holidays = holidays;
+						Query.get("l_leavetrans", {"LeaveTransID": $routeParams.id}, function (obj){
+							$scope.checkAccess(obj);
+							Query.get("l_empltable", {"EmplID":obj.EmplID}, function(user){
+								$scope.user = user;
+
+								//check owner
+								$scope.isOwner = (user.UserID == current_user.user) 
+
+								
+								Query.query("l_leavetable", {"EmplID":user.EmplID}, function(leaves){
+									$scope.leaves = leaves;				
+									
+									$scope.LeaveTransID = obj.LeaveTransID;
+									$scope.Description = obj.Description;
+									
+									$scope.date_time_from = $filter("sqlToJsDate")(obj.LeaveStartDate)
+									$scope.date_time_to = $filter("sqlToJsDate")(obj.LeaveEndDate)
+									$scope.mytime = $filter("sqlToJsTime")(obj.LeaveStartTime)
+									$scope.mytime2 = $filter("sqlToJsTime")(obj.LeaveEndTime)
+									$scope.steps = [true, true, true, true];
+									for(var i =0; i < $scope.leaves.length; i++)
+										if($scope.leaves[i].LeaveType == obj.LeaveType)
+										{
+
+											console.log('------ choice---- ' + i);
+											$scope.selectedType = $scope.leaves[i];
+										}
+									$scope.updateDateTime();
+									$scope.mytime.setMilliseconds($scope.min_time.getMilliseconds())
+									$scope.mytime2.setMilliseconds($scope.max_time.getMilliseconds())
+
+									//fetch approve data
+									Query.get("l_approverlist", {"EmplID":user.EmplID}, function (data){
+										if(data.Approver1 != null)
+										{
+											$scope.approvers[0] = {show:true, disable:false}
+											
+											Query.get("l_empltable", {"EmplID":data.Approver1}, function (approver1)
+											{
+												$scope.approvers[0].user = approver1;
+												
+												if(current_user.user == $scope.approvers[0].user.UserID)
+												{
+													$scope.approvers[0].isApprover = true;
+
+												}else
+													$scope.approvers[0].isApprover = false;
+
+											});
+											Query.getApproveStatus({LeaveTransID: $scope.LeaveTransID, Approve:data.Approver1}, function(data_approve){
+												console.log('yo approval')
+												console.log(data_approve)
+												$scope.loadApprovData($scope.approvers[0], data_approve);
+											}) 
+
+										}else
+											$scope.approvers[0] = {show:false}
+										if(data.Approver2 != null)
+										{
+											$scope.approvers[1] = {show:true, disable:false}
+											Query.get("l_empltable", {"EmplID":data.Approver2}, function (approver2)
+											{
+												$scope.approvers[1].user = approver2;
+
+												if(current_user.user == $scope.approvers[1].user.UserID)
+													$scope.approvers[1].isApprover = true;
+												else
+													$scope.approvers[1].isApprover = false;
+											});
+										}else
+											$scope.approvers[1] = {show:false}
+
+										if(data.Approver3 != null)
+										{
+											$scope.approvers[2] = {show:true, disable:false}
+											Query.get("l_empltable", {"EmplID":data.Approver3}, function (approver3)
+											{
+												$scope.approvers[2].user = approver3;
+												if(current_user.user == $scope.approvers[2].user.UserID)
+													$scope.approvers[2].isApprover = true;
+												else
+													$scope.approvers[2].isApprover = false;
+											});
+										}else
+											$scope.approvers[2] = {show:false}
+									})
+
+
+								});
+								
+
+
+							});
+							
+							
+						})
+					
+				});
+			});
+		}	
+		$scope.init();
+
+		
 		
 	}])
