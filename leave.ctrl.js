@@ -131,7 +131,7 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 
 				return false;
 			}
-			obj.LeaveTransID = $filter('documentId')($scope.TransID);
+			obj.LeaveTransID = $filter('documentId')($scope.TransID + 1);
 			obj.EmplID = $scope.user.EmplID;
 			obj.LeaveType = $scope.selectedType.LeaveType;
 			obj.CreateDate = $filter('jsDateToSqlDate')(new Date());
@@ -156,7 +156,7 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 		$scope.init();
 		
 	}])
-	.controller('LeaveReadCtrl', ["$controller", "$scope", "$filter", "$routeParams", "Query", "LeaveTypes", "$location", "Config", function  ($controller, $scope, $filter, $routeParams, Query, LeaveTypes, $location, Config) {
+	.controller('LeaveReadCtrl', ["$controller", "$scope", "$filter", "$routeParams", "Query", "LeaveTypes", "$location", "Config", "$route", function  ($controller, $scope, $filter, $routeParams, Query, LeaveTypes, $location, Config, $route) {
 		// body...
 		angular.extend(this, $controller('LeaveCtrl', {
 			$scope: $scope,
@@ -199,13 +199,15 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 				
 				if(status == Config.STATUS.CANCLED)
 					$location.path("/");
-				//else
-				//	$location.path("/read/"  + obj.LeaveTransID );
+				else
+					$route.reload();
+					//$location.path("/read/"  + obj.LeaveTransID );
 			})
 		}
 		$scope.approvers = [];
 		$scope.approvers_choices =  Config.approver_choices;
 		$scope.isOwner = false;
+		$scope.hr = null;
 		$scope.checkAccess = function(obj)
 		{
 			if(obj.Status == Config.STATUS.CANCLED )
@@ -215,29 +217,36 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 			}
 		}
 
-		$scope.approve = function(approve_item)
+		$scope.approve = function(approve_item, isHr)
 		{
 			if(!angular.isObject(approve_item.selectedChoice) || approve_item.selectedChoice == null)
 				alert(Config.DONT_FORGET.APPROVE)
 			else
 			{
-				alert("approve na")
+				//alert("approve na")
 				console.log(approve_item)
 				//could be uupdate
 				var approve_obj = {}
 				approve_obj.LeaveTransID = $scope.LeaveTransID;
 				approve_obj.Approve = approve_item.user.EmplID;
-				approve_obj.Status = approve_item.selectedChoice.value;
-				approve_obj.Remark = approve_item.mark;
+				
+					approve_obj.Status = approve_item.selectedChoice.value;
+				if(angular.isString(approve_item.mark))
+					approve_obj.Remark = approve_item.mark;
+				else
+					approve_obj.Remark = "";
 
 				approve_obj.EmplID = $scope.user.EmplID
 				Query.approve( approve_obj, function(data){
 					alert(approve_item.selectedChoice.name + "เรียบร้อย");
+					$route.reload();
 				})
 
 			}
 			
 		}
+
+
 
 		$scope.loadApprovData = function(index, data_approve)
 		{
@@ -259,27 +268,37 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 						console.log($scope.approvers[index].selectedChoice)
 					}
 				}
-				//approve.disable = true;
+				if(data_approve.Status == Config.STATUS.APPROVED)
+					$scope.approvers[index].disable = true;
 			}
 		}
 
 		$scope.init = function()
 		{
 
+			
 			Query.getUser(function(current_user){	
 
 				Query.query("l_holiday", {}, function (holidays){
 						$scope.holidays = holidays;
 						Query.get("l_leavetrans", {"LeaveTransID": $routeParams.id}, function (obj){
+							console.log('l_leavetrans')
+							console.log(obj)
 							$scope.checkAccess(obj);
 							$scope.DocStatus = obj.Status;
+							
 
+							$scope.description = obj.Description;
 							Query.get("l_empltable", {"EmplID":obj.EmplID}, function(user){
 								$scope.user = user;
-
+								console.log('after loaded l_empltable')
+								console.log(user);
 								//check owner
 								$scope.isOwner = (user.UserID == current_user.user) 
-
+								if($scope.isOwner)
+									$scope.isOwner = $filter('canEditForm')(obj.Status);
+								console.log('gonna do l_leavetable' + user.EmplID)
+								console.log(user)
 								
 								Query.query("l_leavetable", {"EmplID":user.EmplID}, function(leaves){
 									$scope.leaves = leaves;				
@@ -361,6 +380,36 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 											}) 
 										}else
 											$scope.approvers[2] = {show:false}
+
+										if(data.HRID != null)
+										{
+											var now = new Date();
+											$scope.hr = {show:true, disable:false, knownDate:now, selectedChoice:{name:"รับทราบ"}, mark:"" }
+											Query.get("l_empltable", {"EmplID":data.HRID}, function (hr)
+											{
+												$scope.hr.user = hr;
+												if(current_user.user == $scope.hr.user.UserID)
+													$scope.hr.isHr = true;
+												else
+													$scope.hr.isHr= false;				
+												console.log("hr")
+												console.log($scope.hr)
+												console.log("user")
+												console.log(current_user)
+												console.log((current_user.user == $scope.hr.user.UserID))
+												Query.getApproveStatus({LeaveTransID: $scope.LeaveTransID, Approve:data.HRID}, function(data_approve){
+													if(data_approve.Status == Config.STATUS.ACKNOWLEDGED)
+													{
+														$scope.hr.disable = true;
+														$scope.hr.selectedChoice.value = Config.STATUS.ACKNOWLEDGED
+													}else
+														$scope.hr.selectedChoice.value = Config.STATUS.DRAFT
+												}) 
+											});
+
+											
+										}
+											
 									})
 
 

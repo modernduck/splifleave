@@ -7,7 +7,8 @@ var Config = {
 			{"name" : "ลาพักผ่อน", "value":"03" },
 			{"name" : "ลาคลอด", "value":"04" },
 			{"name" : "ลาบวช", "value":"05" },
-			{"name" : "อื่นๆ", "value":"06" }
+			{"name" : "อื่นๆ", "value":"06" },
+
 	],
 	mainSite : "HO",
 	mininumLeaves : {
@@ -24,7 +25,8 @@ var Config = {
 		"CANCLED":7,
 		"APPROVED":3,
 		"DENIED":4,
-		"REJECTED":5
+		"REJECTED":5,
+		"ACKNOWLEDGED":6
 
 	},
 	approver_choices : [
@@ -250,6 +252,7 @@ angular.module("sick.filter", [])
 		}
 
 	})
+	
 
 	.factory("LeaveTypes", function(){
 		var types = Config.leaveTypes;
@@ -437,6 +440,16 @@ angular.module("sick.filter", [])
 				return "";
 		}
 	}])
+	.filter("canEditForm", function() {
+		return function (status)
+		{
+
+			if(status == Config.STATUS.DRAFT || status == Config.STATUS.REJECTED)
+				return true;
+			return false;
+		}
+
+	})
 
 angular.module('sick.model', [])
 	.factory("Query", ["$http", "$filter", function ($http, $filter){

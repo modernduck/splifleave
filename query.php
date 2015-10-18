@@ -76,6 +76,7 @@ class Query{
 			}
 		}
 		$sql = "select * from {$this->table} $condition";
+		//echo $sql;
 		mysql_query("SET NAMES 'utf8'");
 		$dbquery = mysql_query($sql);
 		return mysql_fetch_assoc($dbquery);
@@ -155,6 +156,7 @@ class Query{
 				$counter++;
 			}
 			$sql = "UPDATE {$this->table} SET $command WHERE {$condition}";
+			mysql_query("SET NAMES 'utf8'");
 
 			$result = mysql_query($sql);
 			return $result;
