@@ -231,7 +231,7 @@ angular.module("sick.filter", [])
 			{
 				//only hours
 				used_mins  = (time_to.getHours() * 60 + time_to.getMinutes()) - (time_from.getHours() * 60 + time_from.getMinutes());
-				if(time_to.getHours() >= 13)
+				if(time_from.getHours() <= 12 && time_to.getHours() >= 13)
 					used_mins -= 1 * 60;
 			}else if(diff_days == 1)
 			{
