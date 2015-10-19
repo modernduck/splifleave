@@ -1,5 +1,5 @@
-angular.module("leave.controller", ['sick.model', 'sick.filter'])
-	.controller('LeaveCtrl', ["$scope", "$filter", "Query", "LeaveTypes", "$location" , function  ($scope, $filter, Query, LeaveTypes, $location) {
+angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload'])
+	.controller('LeaveCtrl', ["$scope", "$filter", "Query", "LeaveTypes", "$location" , 'Upload', '$timeout', function  ($scope, $filter, Query, LeaveTypes, $location, Upload, $timeout) {
 		// body...
 		$scope.user;
 		$scope.leaves;
@@ -23,7 +23,10 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 		$scope.mytime2= angular.copy($scope.max_time)
 		$scope.time_used = 0;
 		$scope.steps = [false, false, false, false];
-
+		$scope.files =[];
+		$scope.errFiles = [];
+		$scope.isUploads = [];
+		$scope.fileAddress = [];
 		/*
 		* Happen when change radio type
 		*/
@@ -33,10 +36,19 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 			if(LeaveTypes.isSickLeave($scope.selectedType))
 			{
 				$scope.minDate = $filter('sqlToJsDate')($scope.selectedType.StartDate);
-				
-				$scope.maxDate = $filter('sqlToJsDate')($scope.selectedType.EndDate);
-				$scope.maxDate = $filter('minDate')($scope.maxDate, new Date())
-				$scope.maxDate.setDate($scope.maxDate.getDate() - 7);
+				var tmp_date = new Date();
+				tmp_date.setDate(tmp_date.getDate() - Config.rangeSickLeave);
+				$scope.minDate = $filter("maxDate")($scope.minDate, tmp_date);
+
+				$scope.maxDate = new Date();
+				console.log("selected range")
+				console.log($scope.minDate)
+				console.log($scope.maxDate)
+				//$filter('sqlToJsDate')($scope.selectedType.EndDate);
+				//var tmp_date = new Date();
+				//tmp_date.setDate(tmp_date.getDate() - 7);
+				///$scope.maxDate = $filter('minDate')($scope.maxDate, new Date())
+				//$scope.maxDate.setDate($scope.maxDate.getDate() - 7);
 			}else if(LeaveTypes.isHolidayLeave($scope.selectedType))
 			{
 				console.log("is holidays")
@@ -57,6 +69,34 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 			$scope.mytime2= angular.copy($scope.max_time)
 			$scope.steps = [false, false, false, false];
 		}
+		
+		$scope.uploadFiles = function(order, file, errFiles) {
+	        $scope.files[order] = file;
+	        $scope.errFiles[order] = errFiles && errFiles[0];
+	        if (file) {
+	            file.upload = Upload.upload({
+	                url: 'upload.php',
+	                data: {file: file, order:order, dir:$scope.uploadDirectory }
+	            });
+
+	            file.upload.then(function (response) {
+	                $timeout(function () {
+	                    file.result = response.data;
+	                });
+	                $scope.isUploads[order] = true;
+	                
+	                $scope.fileAddress[order] = response.data.destination;
+	                console.log(response);
+	                console.log(order);
+	            }, function (response) {
+	                //if (response.status > 0)
+	                  //  $scope.errorMsg = response.status + ': ' + response.data;
+	            }, function (evt) {
+	                file.progress = Math.min(100, parseInt(100.0 * 
+	                                         evt.loaded / evt.total));
+	            });
+	        }   
+	    }
 
 		/*
 		* do this when update 
@@ -103,6 +143,8 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 		$scope.init = function()
 		{
 			Query.getUser(function(current_user){
+				console.log("loaded current user")
+				console.log(current_user)
 				Query.get("l_empltable", {"UserID":current_user.user}, function(user){
 					$scope.user = user;
 					Query.query("l_leavetable", {"EmplID":user.EmplID}, function(leaves){
@@ -115,6 +157,7 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 					});
 					Query.lastId("l_leavetrans", {"idName":"TransID"}, function (obj){
 						$scope.TransID = Number(obj.TransID) ;
+						$scope.uploadDirectory = $filter("documentId")($scope.TransID + 1)
 					})
 				});
 			})
@@ -143,7 +186,12 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 			obj.TotalDay = $filter('leaveDays')($scope.time_used);
 			obj.TotalHour = $filter('leaveHours')($scope.time_used);
 			obj.TotalMin = $filter('leaveMinutes')($scope.time_used);
+
 			obj.Status = status;
+			if($scope.isUploads[0])
+				obj.Attachment1 = $scope.fileAddress[0];
+			if($scope.isUploads[1])
+				obj.Attachment2 = $scope.fileAddress[1];
 			console.log(obj);
 
 			Query.create('l_leavetrans', obj, function (data){
@@ -191,6 +239,10 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 			obj.TotalMin = $filter('leaveMinutes')($scope.time_used);
 			obj.Status = status;
 			console.log(obj);
+			if($scope.isUploads[0])
+				obj.Attachment1 = $scope.fileAddress[0];
+			if($scope.isUploads[1])
+				obj.Attachment2 = $scope.fileAddress[1]
 			obj.condition = "TransID = " + $scope.TransID;
 			Query.update('l_leavetrans', obj, function (data){
 				console.log('after create')
@@ -305,11 +357,21 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 									
 									$scope.LeaveTransID = obj.LeaveTransID;
 									$scope.Description = obj.Description;
-									
+									$scope.uploadDirectory = $scope.LeaveTransID;//for upload
 									$scope.date_time_from = $filter("sqlToJsDate")(obj.LeaveStartDate)
 									$scope.date_time_to = $filter("sqlToJsDate")(obj.LeaveEndDate)
 									$scope.mytime = $filter("sqlToJsTime")(obj.LeaveStartTime)
 									$scope.mytime2 = $filter("sqlToJsTime")(obj.LeaveEndTime)
+									if(obj.Attachment1 != null)
+									{
+										$scope.fileAddress[0] = obj.Attachment1;
+										$scope.isUploads[0] = true;
+									}
+									if(obj.Attachment2 != null)
+									{
+										$scope.fileAddress[1] = obj.Attachment2;
+										$scope.isUploads[1] = true;
+									}
 									$scope.steps = [true, true, true, true];
 									for(var i =0; i < $scope.leaves.length; i++)
 										if($scope.leaves[i].LeaveType == obj.LeaveType)
@@ -346,7 +408,7 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 
 										}else
 											$scope.approvers[0] = {show:false}
-										if(data.Approver2 != null)
+										if(data.Approver2 != null && data.Approver2!="")
 										{
 											$scope.approvers[1] = {show:true, disable:false, id:"2"}
 											Query.get("l_empltable", {"EmplID":data.Approver2}, function (approver2)
@@ -364,7 +426,7 @@ angular.module("leave.controller", ['sick.model', 'sick.filter'])
 										}else
 											$scope.approvers[1] = {show:false}
 
-										if(data.Approver3 != null)
+										if(data.Approver3 != null && data.Approver2!="")
 										{
 											$scope.approvers[2] = {show:true, disable:false, id:"3"}
 											Query.get("l_empltable", {"EmplID":data.Approver3}, function (approver3)

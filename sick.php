@@ -29,7 +29,7 @@ $_SESSION[$page_session] = $aa;
 
 showhead("../");
 ?>
-<div align=left><h1 class=header1>รายการ <?=$page_title?></h1></div>
+
 
 <script type="text/javascript" src="https://code.angularjs.org/1.4.7/angular.min.js"></script>
 <script type="text/javascript" src="https://code.angularjs.org/1.4.7/angular-route.min.js"></script>
@@ -40,6 +40,7 @@ showhead("../");
 
 <script type="text/javascript" src="./main.js"></script>
 <script type="text/javascript" src="./leave.ctrl.js"></script>
+<script type="text/javascript" src="./approve.ctrl.js"></script>
 <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
 
 <section ng-app="sick" >

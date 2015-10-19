@@ -1,4 +1,5 @@
 ﻿var SERVICE_PATH = "http://leave.splifetech.com/leave/service.php";
+
 var Config = {
 	errorText : "ลาเกินสิทธิ์ กรุณาตรวจสอบวันลาอีกครั้ง",
 	leaveTypes : [
@@ -10,6 +11,7 @@ var Config = {
 			{"name" : "อื่นๆ", "value":"06" },
 
 	],
+	rangeSickLeave: 7,
 	mainSite : "HO",
 	mininumLeaves : {
 		"01":(4 * 60),
@@ -27,6 +29,15 @@ var Config = {
 		"DENIED":4,
 		"REJECTED":5,
 		"ACKNOWLEDGED":6
+
+	},
+	status_names : {
+		1 : "DRAFT",
+		2 : "WAITING",
+		3 : "APPROVED",
+		4 : "DENIED",
+		5 : "WAITING(Improve)",
+		6 : "ACKNOWLEDGED",
 
 	},
 	approver_choices : [
@@ -55,7 +66,7 @@ var Config = {
 
 }
 
-angular.module("sick",['ui.bootstrap', 'leave.controller', 'ngRoute'])
+angular.module("sick",['ui.bootstrap', 'leave.controller', 'ngRoute', 'approve.controller'])
 	.config(["$routeProvider", function ($routeProvider){
 		$routeProvider.
 			when('/', {
@@ -65,6 +76,10 @@ angular.module("sick",['ui.bootstrap', 'leave.controller', 'ngRoute'])
 			when('/read/:id', {
 				templateUrl:"read.html",
 				controller:"LeaveReadCtrl"
+			}).
+			when('/approve', {
+				templateUrl:"approvelist.html",
+				controller:"ApproveIndexCtrl"
 			})
 	}])
 
@@ -450,6 +465,15 @@ angular.module("sick.filter", [])
 		}
 
 	})
+	.filter("getLeaveStatus", function(){
+		return function (status) {
+			// body...
+			//console.log(Config.status_names)
+			//console.log(status)
+			return Config.status_names[status];
+		}
+	})
+	
 
 angular.module('sick.model', [])
 	.factory("Query", ["$http", "$filter", function ($http, $filter){
@@ -503,6 +527,15 @@ angular.module('sick.model', [])
 			approve : function(params, callback)
 			{
 				var url = $filter('http_request_url')("approve", "l_approvetrans" ,params)
+				$http.get(url).success(callback);
+			},
+			fetchApproveRequests :function (params, callback) {
+				// body...
+				$http.post(SERVICE_PATH, {action:"fetch_approve_requests", params:params, table:'l_leavetrans'}).success(callback);
+			},
+			getApproverApproveStatus : function(params, callback)
+			{
+				var url = $filter('http_request_url')("get_approve_status", "nope" ,params)
 				$http.get(url).success(callback);
 			}
 

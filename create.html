@@ -1,5 +1,5 @@
 <section >
-
+	<div align=left><h1 class=header1>รายการ สร้างใบลาป่วย / กิจ / พักผ่อน</h1></div>
 
 	<input type=hidden name=frmhide id=frmhide value="">
 	<input type=hidden name=orderby id=orderby value="<?=$_POST[orderby];?>">
@@ -116,7 +116,7 @@
 			 					<a href="" style="color:white;" class="btn btn-primary" ng-click="isShowDate2 = true;" ng-hide="isShowDate2">เลือกวัน </a>
 				 	
 							 	<div style="display:inline-block; min-height:290px;position:relative" ng-show="isShowDate2">
-							      <datepicker ng-change="updateDateTime()" ng-model="date_time_to" min-date="date_time_from" show-weeks="true" class="well well-sm" ></datepicker>
+							      <datepicker ng-change="updateDateTime()" ng-model="date_time_to" min-date="date_time_from" max-date="maxDate" show-weeks="true" class="well well-sm" ></datepicker>
 							      <a class="btn btn-primary"  style="width:100%;color:white;" ng-click="isShowDate2 = false;steps[2]=true;" href="">ปิด</a>
 							      <input type="text"  ng-model="date_time_to" required  ng-show="false"  />
 							      
@@ -212,18 +212,27 @@
 		 	<td>หมายเหตุการลา</td>
 			 <td><textarea class="form-control" ng-model="description"></textarea></td>		 
 		 </tr>
-		 <tr ng-show="steps[2]">
-		 	<td></td>
-			 <td>เอกสารแนบ <input type="file" /></td>		 
+		 <tr>
+		 	<td colspan="2" style="height:20px;" ></td>
 		 </tr>
 		 <tr ng-show="steps[2]">
 		 	<td></td>
-			 <td>เอกสารแนบ <input type="file" /></td>		 
+			 <td>เอกสารแนบ <button type="file" ngf-select="uploadFiles(0,$file, $invalidFiles)"
+           ngf-max-height="1000" ngf-max-size="2MB"> 
+      Select File</button> <a ng-show="isUploads[0]" href="{{fileAddress[0]}}">Download</a></td>		 
 		 </tr>
 		 <tr ng-show="steps[2]">
 		 	<td></td>
-			 <td>เอกสารแนบ <input type="file" /></td>		 
-		 </tr ng-show="steps[2]">	
+			 <td>เอกสารแนบ <button type="file" ngf-select="uploadFiles(1,$file, $invalidFiles)"
+           ngf-max-height="1000" ngf-max-size="2MB">
+      Select File</button>  <a ng-show="isUploads[1]" href="{{fileAddress[1]}}">Download</a></td>		 
+		 </tr>
+		 <!--<tr ng-show="steps[2]">
+		 	<td></td>
+			 <td>เอกสารแนบ <button type="file" ngf-select="uploadFiles(2,$file, $invalidFiles)"
+           ngf-max-height="1000" ngf-max-size="2MB">
+      Select File</button></td>		 
+		 </tr ng-show="steps[2]">	-->
 		 <tr ng-show="steps[2]">
 		 	<td></td>
 		 	<td>

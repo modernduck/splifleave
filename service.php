@@ -110,11 +110,18 @@ function notifyLeaveTrans($leave_trans ,$owner_id, $message)
 		}
 	}
 	$emails = findEmailsByEmplID($approver_ids);
+	$result = array();
 	foreach ($emails as $email) {
 		# code...
-
-		sendEmail($email, "Employee's Leave ({$leave_trans}) Notification", $message);
+		array_push(
+			$result, 
+			sendEmail($email, "Employee's Leave ({$leave_trans}) Notification", $message)
+		);
 	}
+	return array(
+		'emails' => $emails,
+		'result' => $result,
+	);
 }
 
 
@@ -156,6 +163,18 @@ if(isset($_GET) && isset($_GET['action']) )
 			"user" => $_SESSION[adm_user_name]
 
 		));
+	}
+	else if($action == "get_approve_status")
+	{
+		$params = $_GET['params'];
+		$result = getCurrentTrans($params['LeaveTransID'], $params['Approve']);
+
+		if($result)
+			echo json_encode($result);
+		else
+			echo json_encode(array(
+				"status" => false
+			));
 	}
 	else if($action == "check_approve")
 	{
@@ -391,7 +410,39 @@ if(isset($_GET) && isset($_GET['action']) )
 		$query = new Query($table);
 		$data = $query->create($params);
 
+		if($table == 'l_leavetrans')
+		{
+			if(isset($params->Status))
+			{
+				if($params->Status == 1)
+				{
+					$array = array();
+					$array[0] = $params->EmplID;
+					$emails = findEmailsByEmplID($array);
+					$owner_email = $emails[$params->EmplID];
+					$url = "http://leave.splifetech.com/leave/sick.php#/read/{$params->LeaveTransID}";
+					$message = "you can edit your leave form at $url";
+					sendEmail($owner_email, "Your leave form have been save", $message, "noreply@spliftech.com");
+					$data= array(
+						'data' => $data,
+						'email' => $owner_email,
+					);
+				}else if($params->Status == 2)
+				{
+					//notify everyone who involve
+					$url = "http://leave.splifetech.com/leave/sick.php#/read/{$params->LeaveTransID}";
+					$message = "Employee ID {$params->EmplID} 's leave application need you to verify you could verify at {$url}";
+					$response = notifyLeaveTrans($params->LeaveTransID, $params->EmplID, $message);
+					$data= array(
+						'data' => $data,
+						'result' => $response,
+					);
+					
+				}
 
+			}
+			
+		}
 
 		echo json_encode($data);
 	}else if($action == 'update')
@@ -430,7 +481,11 @@ if(isset($_GET) && isset($_GET['action']) )
 					//notify everyone who involve
 					$url = "http://leave.splifetech.com/leave/sick.php#/read/{$params->LeaveTransID}";
 					$message = "Employee ID {$params->EmplID} 's leave application need you to verify you could verify at {$url}";
-					notifyLeaveTrans($params->LeaveTransID, $params->EmplID, $message);
+					$response = notifyLeaveTrans($params->LeaveTransID, $params->EmplID, $message);
+					$data= array(
+						'data' => $data,
+						'result' => $response,
+					);
 				}
 
 			}
@@ -439,6 +494,38 @@ if(isset($_GET) && isset($_GET['action']) )
 
 		echo json_encode($data);
 		
+	}else if($action == "fetch_approve_requests")
+	{
+		$lists = $params->requests;
+		$sql = "SELECT `l_leavetrans`.Status, NameThai, `l_leavetrans`.LeaveTransID, `l_leavetrans`.LeaveStartDate, `l_leavetrans`.LeaveEndDate, `l_leavetrans`.LeaveType FROM `l_leavetrans`";
+		$sql = $sql." LEFT JOIN `l_empltable` ON `l_empltable`.EmplID = `l_leavetrans`.EmplID WHERE `l_leavetrans`.Status = 2 AND ";
+		if(count($lists) == 0)
+			$sql = $sql." 1";
+		$counter = 0;
+		foreach ($lists as $item) {
+			# code...
+			if($counter > 0)
+				$sql = $sql." OR ";
+			$sql = $sql." `l_leavetrans`.EmplID = ".$item->EmplID;
+			$counter++;
+		}
+		
+		mysql_query("SET NAMES 'utf8'");
+		
+		$dbquery = mysql_query($sql);
+		//$result= mysql_fetch_array($dbquery);
+		
+		$result = array();
+		while ($row = mysql_fetch_assoc($dbquery)) 
+			array_push($result, $row);
+		
+		echo json_encode($result);
+		/*echo json_encode(array(
+			'sql' => $sql,
+			'data' => $result,
+			'params' => $params,
+			'request' => $params->requests,
+		));*/
 	}
 }
 	
