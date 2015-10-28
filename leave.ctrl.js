@@ -55,6 +55,13 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 				$scope.minDate = new Date()
 				$scope.minDate.setDate($scope.minDate.getDate() + 1);
 				$scope.maxDate = $filter('sqlToJsDate')($scope.selectedType.EndDate);
+			}else if(LeaveTypes.isWorkLeave($scope.selectedType))
+			{
+				$scope.minDate = $filter('sqlToJsDate')($scope.selectedType.StartDate);
+				var tmp_date = new Date();
+				tmp_date.setDate(tmp_date.getDate() - Config.rangeWorkLeave);
+				$scope.minDate = $filter("maxDate")($scope.minDate, tmp_date);
+				$scope.maxDate = $filter('sqlToJsDate')($scope.selectedType.EndDate);
 			}
 			else
 			{
@@ -168,6 +175,7 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 		{
 			var obj = {};
 			var result = $filter("checkPassMinimum")($scope.time_used, $scope.selectedType.LeaveType)
+			
 			if(!result.status)
 			{
 				//fail
@@ -176,13 +184,18 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 			}
 			obj.LeaveTransID = $filter('documentId')($scope.TransID + 1);
 			obj.EmplID = $scope.user.EmplID;
-			obj.LeaveType = $scope.selectedType.LeaveType;
+			if($scope.isOther)
+				obj.LeaveType = $scope.leaveOtherType ;
+			else
+				obj.LeaveType = $scope.selectedType.LeaveType;
+
 			obj.CreateDate = $filter('jsDateToSqlDate')(new Date());
 			obj.LeaveStartDate = $filter('jsDateToSqlDate')($scope.date_time_from);
 			obj.LeaveEndDate = $filter('jsDateToSqlDate')($scope.date_time_to);
 			obj.LeaveStartTime = $filter('jsTimeToSqlTime')($scope.mytime);
 			obj.LeaveEndTime = $filter('jsTimeToSqlTime')($scope.mytime2)
 			obj.Description = $scope.description;
+			obj.Subject = $scope.subject;
 			obj.TotalDay = $filter('leaveDays')($scope.time_used);
 			obj.TotalHour = $filter('leaveHours')($scope.time_used);
 			obj.TotalMin = $filter('leaveMinutes')($scope.time_used);
@@ -204,6 +217,98 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 		$scope.init();
 		
 	}])
+	.controller('LeaveOtherCtrl', ["$controller", "$scope", "$filter", "$routeParams", "Query", "LeaveTypes", "$location", "Config", "$route", function  ($controller, $scope, $filter, $routeParams, Query, LeaveTypes, $location, Config, $route) {
+		angular.extend(this, $controller('LeaveCtrl', {
+			$scope: $scope,
+			$filter: $filter, 
+			$routeParams: $routeParams, 
+			Query: Query, 
+			LeaveTypes: LeaveTypes,
+			$location: $location,
+		}));
+		$scope.selectedType = Config.leaveTypes[Config.leaveTypes.length - 1];
+		$scope.Config = Config;
+		$scope.minDate = new Date();
+		
+		$scope.updateOtherType = function()
+		{
+			console.log('update other')
+			console.log($scope.selectedOtherType)
+			$scope.minDate = new Date();
+			$scope.minDate.setDate($scope.minDate.getDate() + 1)
+
+			if($scope.selectedOtherType.value == Config.leavePregnantType)
+			{
+				$scope.maxDate = new Date();
+				$scope.maxDate.setDate($scope.minDate.getDate() + $scope.selectedOtherType.maxCount);
+			}else if($scope.selectedOtherType.value == Config.leaveMonkType)
+			{
+				var user_start_date = $filter('sqlToJsDate')($scope.user.StartDate);
+				var current_date = new Date();
+				var diff_second = (current_date.getTime() - user_start_date.getTime())/1000;
+				var diff_year = Math.floor(diff_second / 60 / 60 / 24 /365) 
+				if(diff_year < $scope.selectedOtherType.minWorkYears)
+				{
+					alert($scope.selectedOtherType.alertMessage)
+					$scope.selectedOtherType = null;
+				}else
+					console.log('diff_year ' + diff_year)
+			}
+				
+			
+			$scope.date_time_from = null;
+			$scope.date_time_to = null;
+			$scope.mytime = angular.copy($scope.min_time)
+			$scope.mytime2= angular.copy($scope.max_time)
+			
+		}
+
+		$scope.saveForm = function(status)
+		{
+			var obj = {};
+			var result;
+			
+			var result = $filter("checkPassMinimum")($scope.time_used, $scope.selectedType.LeaveType)
+			if(!result.status)
+			{
+				//fail
+
+				return false;
+			}
+			obj.LeaveTransID = $filter('documentId')($scope.TransID + 1);
+			obj.EmplID = $scope.user.EmplID;
+
+			//selectedOtherType
+
+			obj.LeaveType = $scope.selectedOtherType.value;//Config.leaveOtherType;
+
+
+			obj.CreateDate = $filter('jsDateToSqlDate')(new Date());
+			obj.LeaveStartDate = $filter('jsDateToSqlDate')($scope.date_time_from);
+			obj.LeaveEndDate = $filter('jsDateToSqlDate')($scope.date_time_to);
+			obj.LeaveStartTime = $filter('jsTimeToSqlTime')($scope.mytime);
+			obj.LeaveEndTime = $filter('jsTimeToSqlTime')($scope.mytime2)
+			obj.Description = $scope.description;
+			obj.Subject = $scope.subject;
+			obj.TotalDay = $filter('leaveDays')($scope.time_used);
+			obj.TotalHour = $filter('leaveHours')($scope.time_used);
+			obj.TotalMin = $filter('leaveMinutes')($scope.time_used);
+
+			obj.Status = status;
+			if($scope.isUploads[0])
+				obj.Attachment1 = $scope.fileAddress[0];
+			if($scope.isUploads[1])
+				obj.Attachment2 = $scope.fileAddress[1];
+			console.log(obj);
+
+			Query.create('l_leavetrans', obj, function (data){
+				console.log('after create-other')
+				console.log(data)
+				$location.path("/read/"  + obj.LeaveTransID );
+			})
+		}
+
+	}])
 	.controller('LeaveReadCtrl', ["$controller", "$scope", "$filter", "$routeParams", "Query", "LeaveTypes", "$location", "Config", "$route", function  ($controller, $scope, $filter, $routeParams, Query, LeaveTypes, $location, Config, $route) {
 		// body...
 		angular.extend(this, $controller('LeaveCtrl', {
@@ -218,7 +323,13 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 		$scope.saveForm = function(status)
 		{
 			var obj = {};
-			var result = $filter("checkPassMinimum")($scope.time_used, $scope.selectedType.LeaveType)
+			var result;
+			//var result = $filter("checkPassMinimum")($scope.time_used, $scope.selectedType.LeaveType)
+			if(!$scope.isOther)
+				result = $filter("checkPassMinimum")($scope.time_used, $scope.selectedType.LeaveType)
+			else
+				result = $filter("checkPassMinimum")($scope.time_used, Config.leaveOtherType)
+			
 			if(!result.status)
 			{
 				//fail
@@ -227,7 +338,13 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 			}
 			obj.LeaveTransID = $filter('documentId')($scope.TransID);
 			obj.EmplID = $scope.user.EmplID;
-			obj.LeaveType = $scope.selectedType.LeaveType;
+
+			if(!$scope.isOther)
+				obj.LeaveType = $scope.selectedType.LeaveType;
+			else
+				obj.LeaveType = Config.leaveOtherType
+
+			obj.Subject = $scope.subject;
 			obj.CreateDate = $filter('jsDateToSqlDate')(new Date());
 			obj.LeaveStartDate = $filter('jsDateToSqlDate')($scope.date_time_from);
 			obj.LeaveEndDate = $filter('jsDateToSqlDate')($scope.date_time_to);
@@ -300,18 +417,32 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 
 
 
+
+		$scope.canEdit = false;
 		$scope.loadApprovData = function(index, data_approve)
 		{
+			
+			if(data_approve !== null && index > 0 && angular.isUndefined( $scope.approvers[index -1].selectedChoice ))
+			{
+				$scope.approvers[index].disable = true;
+			}
+
+			if(index == 0 && angular.isUndefined(data_approve.Status)  )
+			{
+				console.log("should be able to edit")
+				$scope.canEdit = true;
+			}
 			
 			if(data_approve !== null)
 			{
 				console.log("---data_approve-- at index " + index)
-				console.log(data_approve)
+				
 				$scope.approvers[index].mark = data_approve.Remark;
 				for(var i =0; i < Config.approver_choices.length ;i++)
 				{
 					console.log(Config.approver_choices[i].value + "vs " + data_approve.Status + " = " + ($scope.approvers_choices[i].value == data_approve.Status))
-
+					//if older one dont activate make it disable
+					
 					if(Config.approver_choices[i].value == data_approve.Status)
 					{
 
@@ -322,7 +453,14 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 				}
 				if(data_approve.Status == Config.STATUS.APPROVED)
 					$scope.approvers[index].disable = true;
-			}
+
+
+				if(angular.isUndefined($scope.approvers[index].selectedChoice) ||$scope.approvers[index].selectedChoice.value != Config.STATUS.APPROVED)
+					$scope.hr.disable = true;
+				//check if all aprrove
+
+			}else
+				$scope.approvers[index].show = false;
 		}
 
 		$scope.init = function()
@@ -347,6 +485,7 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 								console.log(user);
 								//check owner
 								$scope.isOwner = (user.UserID == current_user.user) 
+								$scope.isActualOwner = (user.UserID == current_user.user) 
 								if($scope.isOwner)
 									$scope.isOwner = $filter('canEditForm')(obj.Status);
 								console.log('gonna do l_leavetable' + user.EmplID)
@@ -373,20 +512,32 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 										$scope.isUploads[1] = true;
 									}
 									$scope.steps = [true, true, true, true];
-									for(var i =0; i < $scope.leaves.length; i++)
-										if($scope.leaves[i].LeaveType == obj.LeaveType)
-										{
+									//
+									$scope.isOther = false;
+									if(obj.LeaveType != Config.leaveOtherType)
+									{
+										for(var i =0; i < $scope.leaves.length; i++)
+											if($scope.leaves[i].LeaveType == obj.LeaveType)
+											{
 
-											console.log('------ choice---- ' + i);
-											$scope.selectedType = $scope.leaves[i];
-										}
+												console.log('------ choice---- ' + i);
+												$scope.selectedType = $scope.leaves[i];
+											}
+
+									}else
+									{
+										$scope.isOther = true;
+										$scope.subject = obj.Subject;
+
+									}
+									
 									$scope.updateDateTime();
 									$scope.mytime.setMilliseconds($scope.min_time.getMilliseconds())
 									$scope.mytime2.setMilliseconds($scope.max_time.getMilliseconds())
 
 									//fetch approve data
 									Query.get("l_approverlist", {"EmplID":user.EmplID}, function (data){
-										if(data.Approver1 != null)
+										if(data.Approver1 != null && data.Approver1 != "")
 										{
 											$scope.approvers[0] = {show:true, disable:false, id:"1"}
 											
@@ -426,7 +577,7 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 										}else
 											$scope.approvers[1] = {show:false}
 
-										if(data.Approver3 != null && data.Approver2!="")
+										if(data.Approver3 != null && data.Approver3!="")
 										{
 											$scope.approvers[2] = {show:true, disable:false, id:"3"}
 											Query.get("l_empltable", {"EmplID":data.Approver3}, function (approver3)
@@ -450,6 +601,7 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 											Query.get("l_empltable", {"EmplID":data.HRID}, function (hr)
 											{
 												$scope.hr.user = hr;
+												;
 												if(current_user.user == $scope.hr.user.UserID)
 													$scope.hr.isHr = true;
 												else

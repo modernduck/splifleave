@@ -9,9 +9,17 @@ var Config = {
 			{"name" : "ลาคลอด", "value":"04" },
 			{"name" : "ลาบวช", "value":"05" },
 			{"name" : "อื่นๆ", "value":"06" },
-
 	],
+	leaveOtherTypes : [
+		{"name" : "ลาคลอด", "value":"04", maxCount:90 },
+		{"name" : "ลาบวช", "value":"05",  minWorkYears:2, alertMessage:"อายุการทำงานน้อยกว่า2ปีไม่อาจลาบวชได้" },
+		{"name" : "อื่นๆ", "value":"06" },
+	],
+	leaveOtherType : "06",
+	leavePregnantType : "04",
+	leaveMonkType : "05",
 	rangeSickLeave: 7,
+	rangeWorkLeave: 30,
 	mainSite : "HO",
 	mininumLeaves : {
 		"01":(4 * 60),
@@ -28,16 +36,20 @@ var Config = {
 		"APPROVED":3,
 		"DENIED":4,
 		"REJECTED":5,
-		"ACKNOWLEDGED":6
-
+		"ACKNOWLEDGED":6,
+		"PREAPPROVE1":8,
+		"PREAPPROVE2":9,
 	},
 	status_names : {
 		1 : "DRAFT",
 		2 : "WAITING",
 		3 : "APPROVED",
 		4 : "DENIED",
-		5 : "WAITING(Improve)",
+		5 : "RETURN TO ADJUST",
 		6 : "ACKNOWLEDGED",
+		7 : "CANCLED",
+		8 : "PREAPPROVE1",
+		9 : "PREAPPROVE2"
 
 	},
 	approver_choices : [
@@ -77,9 +89,24 @@ angular.module("sick",['ui.bootstrap', 'leave.controller', 'ngRoute', 'approve.c
 				templateUrl:"read.html",
 				controller:"LeaveReadCtrl"
 			}).
+			when('/other', {
+				templateUrl:'create-other.html',
+				controller:'LeaveOtherCtrl'
+			}).
 			when('/approve', {
 				templateUrl:"approvelist.html",
 				controller:"ApproveIndexCtrl"
+			}).
+			when('/list', {
+				templateUrl:"leavelist.html",
+				controller:"LeaveIndexCtrl"
+
+			})
+			.
+			when('/cancle', {
+				templateUrl:"canclelist.html",
+				controller:"CancleIndexCtrl"
+
 			})
 	}])
 
@@ -287,6 +314,12 @@ angular.module("sick.filter", [])
 				if(selectedType.LeaveType == types[0].value)
 					return true;
 				return false;
+			},
+			isWorkLeave : function(selectedType)
+			{
+				if(selectedType.LeaveType == types[1].value)
+					return true;
+				return false;	
 			},
 			isHolidayLeave : function(selectedType)
 			{

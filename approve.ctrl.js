@@ -52,4 +52,34 @@ angular.module("approve.controller", ['sick.model', 'sick.filter'])
 		});
 		
 		
+	}]).controller("LeaveIndexCtrl", ["$scope", "$filter", "Query", "LeaveTypes", "$location" , function  ($scope, $filter, Query, LeaveTypes, $location) {
+		Query.getUser(function(current_user){
+			Query.get("l_empltable", {"UserID":current_user.user}, function(user){
+				$scope.user = user;
+				Query.query("l_leavetrans", {"EmplID":user.EmplID}, function (list) {
+					$scope.leaves = list;
+
+				});
+			});
+		});
+
+	}]).controller("CancleIndexCtrl", ["$scope", "$filter", "Query", "LeaveTypes", "$location" , function  ($scope, $filter, Query, LeaveTypes, $location) {
+		Query.getUser(function(current_user){
+			Query.get("l_empltable", {"UserID":current_user.user}, function(user){
+				$scope.user = user;
+				Query.query("l_leavetrans", {"EmplID":user.EmplID}, function (list) {
+					//$scope.leaves = $filter('filter)'(list);;
+					$scope.leaves = list;
+					$scope.leaves = $filter('filter')(list, function  (item) {
+						// body...
+						if(item.Status == 3 || item.Status == 5 || item.Status == 6)
+							return true;
+					})
+
+				});
+			});
+		});
+
 	}])
+
+	;

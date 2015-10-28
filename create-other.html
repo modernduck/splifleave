@@ -19,7 +19,7 @@
 			  <td width="10%"></td>
 			 <td width="30%"></td>
 			 <td width="10%">รหัสเอกสาร</td>
-			 <td width="30%">{{ LeaveTransID }}<input type=hidden  name=""  value="" ></td>
+			 <td width="30%">{{ TransID +1 | documentId}}<input type=hidden  name=""  value="" ></td>
 			 <td width="10%"></td>
 			 <td width="20%"></td>
 		 </tr>
@@ -39,7 +39,7 @@
 			 <td></td>
 			 <td></td>
 		 </tr>
-		  <tr>
+		   <tr>
 			 <td colspan="6">
 			 	<table class="table table-striped">
 			 		<thead style="background-color:#1395E0;color:white;">
@@ -77,44 +77,36 @@
 	<table  border=0><tr><td align=center><b>รายละเอียดการลา</b></td></table></legend>
 	     <table style="width:80%" align=center>
 		  <tr>
-			 <td width="20%"> </td>
-			 <td ng-hide="!isOwner || isOther">
+			 <td width="40%"> <label ng-repeat="n in Config.leaveOtherTypes">
+			          <input required type="radio" name="pageNumber" ng-model="$parent.selectedOtherType" ng-value="n" ng-click="updateOtherType()" /> {{n.name}} &nbsp;&nbsp;
+			     </label></td>
+			 <td>
+
 			 	
-			 	 <label ng-repeat="n in leaves">
-		          <input ng-disabled="!isOwner" type="radio" name="pageNumber" ng-model="$parent.selectedType" ng-value="n" ng-click="updateType()" /> {{n.LeaveType | leaveType}} 
-		         </label>
-		         
+			 	 <input type="text" placeholder="โปรดระบุหัวข้อการลา" ng-model="subject" class="form-control" required />
+			 	
 			 </td>
-			 <td ng-show="!isOwner && !isOther">
-			 	<label><input disable type="radio" checked /> {{selectedType.LeaveType | leaveType}}</label>
-			 </td>
-			 <td ng-show="isOther">
-			 	<label>ลาอื่น</label>
-			 	<input type="text" class="form-control" ng-model="subject" ng-disabled="!isOwner">
-			 </div>
 			 
 		 </tr>
 		 <tr>
 		 	<td colspan="2">
 		 		<div class="row">
 		 			<div class="col-md-6">
-		 				<section ng-show="selectedType!=null || isOther">
+		 				<section >
 		 					<h4>เริ่มลา</h4>
 		 					<div>
-		 						<a ng-hide="!isOwner" href="" style="color:white;" class="btn btn-primary" ng-click="isShowDate = true;" ng-hide="isShowDate">เลือกวัน </a>
+		 						<a href="" style="color:white;" class="btn btn-primary" ng-click="isShowDate = true;" ng-hide="isShowDate">เลือกวัน </a>
 			 	
-								 	<div style="display:inline-block; min-height:290px;position:relative" ng-show="isShowDate">
-								      <datepicker  ng-change="updateDateTime()" ng-model="date_time_from" min-date="minDate" max-date="maxDate" show-weeks="true" class="well well-sm" ></datepicker>
-								      <a class="btn btn-primary"  style="width:100%;color:white;" ng-click="isShowDate = false;steps[1]=true;" href="">ปิด</a>
-								      <input type="text"  ng-model="date_time_from" required  ng-show="false"  />
-								      
-								    </div>
-								    <span style="font-size:1.5em;" ng-hide="isOwner">วันที่ </span><span style="font-size:1.5em;">{{date_time_from | date:"dd/MM/yyyy"}}</span> <span style="font-size:1.5em;" ng-hide="isOwner">เวลา {{mytime.getHours() | stringDigit}} : {{mytime.getMinutes() | stringDigit}}</span> 
-								 	
+							 	<div style="display:inline-block; min-height:290px;position:relative" ng-show="isShowDate">
+							      <datepicker ng-change="updateDateTime()" ng-model="date_time_from" min-date="minDate" max-date="maxDate" show-weeks="true" class="well well-sm" ></datepicker>
+							      <a class="btn btn-primary"  style="width:100%;color:white;" ng-click="isShowDate = false;steps[1]=true;" href="">ปิด</a>
+							      <input type="text"  ng-model="date_time_from" required  ng-show="false"  />
+							      
+							    </div>
+							    <span style="font-size:1.5em;">{{date_time_from | date:"dd/MM/yyyy"}}</span> 
 		 					</div>
 		 					<div>
-		 						<timepicker ng-hide="!isOwner" ng-change="updateDateTime()" ng-model="mytime"  hour-step="1" minute-step="30" show-meridian="false" min="min_time" max="max_time"></timepicker>
-			 					
+		 						<timepicker ng-change="updateDateTime()" ng-model="mytime"  hour-step="1" minute-step="30" show-meridian="false" min="min_time" max="max_time"></timepicker>
 		 					</div>
 		 				</section>
 		 			</div>
@@ -122,21 +114,18 @@
 		 				<section ng-show="steps[1]">
 		 					<h4>ถึง</h4>
 		 					<div>
-			 					<a ng-hide="!isOwner" href="" style="color:white;" class="btn btn-primary" ng-click="isShowDate2 = true;" ng-hide="isShowDate2">เลือกวัน </a>
-			 	
+			 					<a href="" style="color:white;" class="btn btn-primary" ng-click="isShowDate2 = true;" ng-hide="isShowDate2">เลือกวัน </a>
+				 	
 							 	<div style="display:inline-block; min-height:290px;position:relative" ng-show="isShowDate2">
-							      <datepicker  ng-change="updateDateTime()" ng-model="date_time_to" max-date="maxDate" min-date="date_time_from" show-weeks="true" class="well well-sm" ></datepicker>
+							      <datepicker ng-change="updateDateTime()" ng-model="date_time_to" min-date="date_time_from" max-date="maxDate" show-weeks="true" class="well well-sm" ></datepicker>
 							      <a class="btn btn-primary"  style="width:100%;color:white;" ng-click="isShowDate2 = false;steps[2]=true;" href="">ปิด</a>
 							      <input type="text"  ng-model="date_time_to" required  ng-show="false"  />
 							      
 							    </div>
-							    <span style="font-size:1.5em;" ng-hide="isOwner">วันที่ </span>
-							    <span style="font-size:1.5em;">{{date_time_to | date:"dd/MM/yyyy"}}</span>  <span style="font-size:1.5em;" ng-hide="isOwner">เวลา {{mytime2.getHours() | stringDigit}} : {{mytime2.getMinutes() | stringDigit}}</span>
-							 	
+							    <span style="font-size:1.5em;">{{date_time_to | date:"dd/MM/yyyy"}}</span> 
 							 </div>
 							<div>
-								<timepicker ng-hide="!isOwner" ng-change="updateDateTime()" ng-model="mytime2"  hour-step="1" minute-step="30" show-meridian="false" min="min_time" max="max_time"></timepicker>
-		 		
+								<timepicker ng-change="updateDateTime()" ng-model="mytime2"  hour-step="1" minute-step="30" show-meridian="false" min="min_time" max="max_time"></timepicker>
 							</div>
 		 				</section>
 		 			</div>
@@ -151,10 +140,10 @@
 		 		วันที่ 
 		 	</td>
 			 <td>
-			 	<a ng-hide="!isOwner" href="" style="color:white;" class="btn btn-primary" ng-click="isShowDate = true;" ng-hide="isShowDate">เลือกวัน </a>
+			 	<a href="" style="color:white;" class="btn btn-primary" ng-click="isShowDate = true;" ng-hide="isShowDate">เลือกวัน </a>
 			 	
 			 	<div style="display:inline-block; min-height:290px;position:relative" ng-show="isShowDate">
-			      <datepicker  ng-change="updateDateTime()" ng-model="date_time_from" min-date="minDate" max-date="maxDate" show-weeks="true" class="well well-sm" ></datepicker>
+			      <datepicker ng-change="updateDateTime()" ng-model="date_time_from" min-date="minDate" max-date="maxDate" show-weeks="true" class="well well-sm" ></datepicker>
 			      <a class="btn btn-primary"  style="width:100%;color:white;" ng-click="isShowDate = false;steps[1]=true;" href="">ปิด</a>
 			      <input type="text"  ng-model="date_time_from" required  ng-show="false"  />
 			      
@@ -168,9 +157,8 @@
 		 <tr ng-show="selectedType!=null">
 		 	<td>เวลา</td>
 		 	<td>
-		 		<timepicker ng-hide="!isOwner" ng-change="updateDateTime()" ng-model="mytime"  hour-step="1" minute-step="30" show-meridian="false" min="min_time" max="max_time"></timepicker>
-			 	<span style="font-size:1.5em;" ng-hide="isOwner">{{mytime.getHours() | stringDigit}} : {{mytime.getMinutes() | stringDigit}}</span>
-
+		 		<timepicker ng-change="updateDateTime()" ng-model="mytime"  hour-step="1" minute-step="30" show-meridian="false" min="min_time" max="max_time"></timepicker>
+			 	
 
 		 	</td>
 
@@ -183,10 +171,10 @@
 		 		วันที่ 
 		 	</td>
 			 <td>
-			 	<a ng-hide="!isOwner" href="" style="color:white;" class="btn btn-primary" ng-click="isShowDate2 = true;" ng-hide="isShowDate2">เลือกวัน </a>
+			 	<a href="" style="color:white;" class="btn btn-primary" ng-click="isShowDate2 = true;" ng-hide="isShowDate2">เลือกวัน </a>
 			 	
 			 	<div style="display:inline-block; min-height:290px;position:relative" ng-show="isShowDate2">
-			      <datepicker  ng-change="updateDateTime()" ng-model="date_time_to" min-date="date_time_from" show-weeks="true" class="well well-sm" ></datepicker>
+			      <datepicker ng-change="updateDateTime()" ng-model="date_time_to" min-date="date_time_from" show-weeks="true" class="well well-sm" ></datepicker>
 			      <a class="btn btn-primary"  style="width:100%;color:white;" ng-click="isShowDate2 = false;steps[2]=true;" href="">ปิด</a>
 			      <input type="text"  ng-model="date_time_to" required  ng-show="false"  />
 			      
@@ -200,12 +188,13 @@
 		 <tr ng-show="steps[1]">
 		 	<td>เวลา</td>
 		 	<td>
-		 		<timepicker ng-hide="!isOwner" ng-change="updateDateTime()" ng-model="mytime2"  hour-step="1" minute-step="30" show-meridian="false" min="min_time" max="max_time"></timepicker>
-		 		<span style="font-size:1.5em;" ng-hide="isOwner">{{mytime2.getHours() | stringDigit}} : {{mytime2.getMinutes() | stringDigit}}</span>
+		 		<timepicker ng-change="updateDateTime()" ng-model="mytime2"  hour-step="1" minute-step="30" show-meridian="false" min="min_time" max="max_time"></timepicker>
+			 	
+
 		 	</td>
 
-		 </tr>
-		-->
+		 </tr>-->
+
 		 <tr ng-show="steps[2]">
 		 
 			 <td colspan="2">
@@ -220,9 +209,9 @@
 		 	<td></td>
 		 	<td style="height:20px;"></td>
 		 </tr>
-		 <tr ng-show="steps[2]" >
+		 <tr ng-show="steps[2]">
 		 	<td>หมายเหตุการลา</td>
-			 <td><textarea ng-disabled="!isOwner" class="form-control" ng-model="description"></textarea></td>		 
+			 <td><textarea class="form-control" ng-model="description"></textarea></td>		 
 		 </tr>
 		 <tr>
 		 	<td colspan="2" style="height:20px;" ></td>
@@ -238,23 +227,22 @@
 			 <td>เอกสารแนบ <button type="file" ngf-select="uploadFiles(1,$file, $invalidFiles)"
            ngf-max-height="1000" ngf-max-size="2MB">
       Select File</button>  <a ng-show="isUploads[1]" href="{{fileAddress[1]}}">Download</a></td>		 
-		 </tr>	
-		 <tr>
-		 	<td></td>
-		 	<td>{{isActualOwner}} {{isOwner}} {{canEdit}}</td>
 		 </tr>
-		 <tr ng-show="steps[2] && isActualOwner && (isOwner || canEdit)">
+		 <!--<tr ng-show="steps[2]">
+		 	<td></td>
+			 <td>เอกสารแนบ <button type="file" ngf-select="uploadFiles(2,$file, $invalidFiles)"
+           ngf-max-height="1000" ngf-max-size="2MB">
+      Select File</button></td>		 
+		 </tr ng-show="steps[2]">	-->
+		 <tr ng-show="steps[2]">
 		 	<td></td>
 		 	<td>
 		 		<div class="row">
-		 			<div class="col-md-4">
+		 			<div class="col-md-6">
 		 				<input  ng-click="saveForm(1)" type="button" class="btn btn-success" value="บันทึก" style="width:100%;">
 		 			</div>
-		 			<div class="col-md-4">
+		 			<div class="col-md-6">
 		 				<input  ng-click="saveForm(2)" type="button" class="btn btn-primary" value="ส่งใบลา" style="width:100%;">
-		 			</div>
-		 			<div class="col-md-4">
-		 				<input  ng-click="saveForm(7)" type="button" class="btn btn-danger" value="ยกเลิก" style="width:100%;">
 		 			</div>
 		 		</div>
 
@@ -268,45 +256,22 @@
 	</div>
 
 	<!-- #############  ผู้อนุมัติลำดับที่ 1 ################# -->
-	
-	<div ng-repeat="item in approvers" ng-show="item.show" align=center style="padding:10px 0px 10px 0px;" align=center>
+	<!--<div align=center style="padding:10px 0px 10px 0px;" align=center>
 	<fieldset style="width:80%" align=left>
 	<legend>
 	<table  border=0><tr><td align=center><b>ผู้อนุมัติ</b></td></table></legend>
 	     <table style="width:80%" align=center>
 		  <tr>
-			 <td width="10%"> {{item.user.NameThai}}</td>
+			 <td width="10%"> ชื่อผู้อนุม้ติ</td>
 			 
 		 </tr>
 		 <tr>
-			 <td> 
-
-			 	<label><input ng-disabled="!item.isApprover || item.disable" type="radio" name="approve-{{item.id}}" ng-model="item.selectedChoice" ng-value="approvers_choices[0]">{{approvers_choices[0].name}}</label>
-
-				<label><input ng-disabled="!item.isApprover || item.disable" type="radio" name="approve-{{item.id}}" ng-model="item.selectedChoice" ng-value="approvers_choices[1]">{{approvers_choices[1].name}}</label>
-
-				<label><input  ng-disabled="!item.isApprover || item.disable" type="radio" name="approve-{{item.id}}" ng-model="item.selectedChoice" ng-value="approvers_choices[2]">{{approvers_choices[2].name}}</label>
-
-			 	<!--<select ng-disabled="!item.isApprover || item.disable" ng-options="n.name for n in approvers_choices" ng-model="item.selectedChoice"></select>-->
-			 	 
-		     </td>
+			 <td> เป็น radio ให้เลือกว่า อนุมัติ , ไม่อนุม้ติ , กลับไปแก้ไข </td>
 			
 		 </tr>
 		 <tr>
-			 <td>
-			 	หมายเหตุเพิ่มเติม<br/>
-			 	<textarea ng-disabled="!item.isApprover || item.disable" class="form-control" ng-model="item.mark"></textarea>
-
-			 </td>		 
+			 <td>หมายเหตุเพิ่มเติม</td>		 
 		 </tr>
-		 <tr>
-			 <td><br/>
-			 	<button ng-click="approve(item)"  ng-disabled="!item.isApprover || item.disable" class='btn btn-primary'>ยืนยัน</button>
-			 
-			 	
-			 </td>		 
-		 </tr>
-
 		 </table>
 			
 	  	</fieldset>
@@ -356,34 +321,25 @@
 	</div>
 
 	<!-- #############  HR ################# -->
-	<div align=center style="padding:10px 0px 10px 0px;" align=center>
+	<!--<div align=center style="padding:10px 0px 10px 0px;" align=center>
 	<fieldset style="width:80%" align=left>
 	<legend>
 	<table  border=0><tr><td align=center><b>แผนกบุคคลผู้รับเรื่อง</b></td></table></legend>
 	     <table style="width:80%" align=center>
 		  <tr>
-			 <td colspan="2"> {{hr.user.NameThai}}</td>
-			 
+			 <td width="10%"> ชื่อผู้รับเรื่อง</td>
+			 <td></td>
 		 </tr>
 		 <tr>
-			 <td colspan="2"> <input  ng-disabled="!hr.isHr|| hr.disable" type="checkbox" ng-model="hr.selectedChoice.value" ng-true-value="6"
-       ng-false-value="1" /> รับทราบ  {{hr.knownDate  | date:'dd/MM/yyyy'}} </td>
+			 <td> เป็น checkbox เขียนว่า "รับทราบ" </td>
+			  <td> ขึ้นวันที่ </td>
 		 </tr>
 		 <tr>
-			 <td colspan="2">
-			 	หมายเหตุเพิ่มเติม<br/>
-				<textarea  ng-disabled="!hr.isHr || hr.disable" class="form-control" ng-model="hr.mark"></textarea></td>		 
-		 </tr>
-		 <tr>
-
-			 <td colspan="2"><br/>
-			 	<button ng-click="approve(hr)"  ng-disabled="!hr.isHr || hr.disable" class='btn btn-primary'>ยืนยัน</button>
-			 
-			 	
-			 </td>		
+			 <td>หมายเหตุเพิ่มเติม</td>	
+			<td></td>		 
 		 </tr>
 		 </table>
 			
 	  	</fieldset>
-	</div>
+	</div>-->
 </section>

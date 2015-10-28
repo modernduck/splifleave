@@ -1,0 +1,23 @@
+<div align=left><h1 class=header1> รายการ เอกสารใบลาทั้งหมด</h1></div>
+
+<table class="table table-striped">
+	<thead>
+		<th>เลขที่เอกสาร</th>
+		
+		<th>ประเภทการลา</th>
+		<th>วันที่เริ่มลา</th>
+		<th>วันที่สิ้นสุดการลา</th>
+		<th>สถานะ</th>
+		<th></th>
+	</thead>
+	<tbody>
+		<tr ng-repeat="item in leaves | orderBy:'LeaveStartDate'">
+			<td>{{item.LeaveTransID}}</td>	
+			<td>{{item.LeaveType | leaveType}}</td>
+			<td>{{item.LeaveStartDate | date:'dd/MM/yyyy'}}</td>
+			<td>{{item.LeaveEndDate | date:'dd/MM/yyyy'}}</td>
+			<td>{{item.Status | getLeaveStatus}}</td>
+			<td><a href="#/read/{{item.LeaveTransID}}">VIEW</a></td>
+		</tr>
+	</tbody>
+</table>

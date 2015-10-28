@@ -2,11 +2,11 @@
 Session_Start();
 require("../include/inc-admin.php");
 
-$page_title = "สร้างใบลาป่วย / กิจ / พักผ่อน";
+$page_title = "���ҧ��һ��� / �Ԩ / �ѡ��͹";
 
 
 $param_get = get_param_reqeust();
-$user_name = $_SESSION[adm_user_name];  // ชื่อผู้เข้าใช้งาน
+$user_name = $_SESSION[adm_user_name];  // ���ͼ�������ҹ
 $aa= array();
 $aerr = array();
 $msg ="";
