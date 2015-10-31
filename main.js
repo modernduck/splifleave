@@ -1,4 +1,4 @@
-﻿var SERVICE_PATH = "http://leave.splifetech.com/leave/service.php";
+﻿var SERVICE_PATH = "./service.php";
 
 var Config = {
 	errorText : "ลาเกินสิทธิ์ กรุณาตรวจสอบวันลาอีกครั้ง",
@@ -384,6 +384,7 @@ angular.module("sick.filter", [])
 			}
 		}])
 
+
 	.filter("minDate", function(){
 		return function (date1, date2)
 		{
@@ -506,6 +507,14 @@ angular.module("sick.filter", [])
 			return Config.status_names[status];
 		}
 	})
+	.filter('isCantCancle', function() {
+		return function (leaveType)
+		{
+			if(leaveType == Config.STATUS.REJECTED || leaveType == Config.STATUS.APPROVED)
+				return true;
+			return false;
+		}
+	})
 	
 
 angular.module('sick.model', [])
@@ -564,8 +573,11 @@ angular.module('sick.model', [])
 			},
 			fetchApproveRequests :function (params, callback) {
 				// body...
-				$http.post(SERVICE_PATH, {action:"fetch_approve_requests", params:params, table:'l_leavetrans'}).success(callback);
+				var url = $filter('http_request_url')("fetch_approve_requests", "nope" ,params)
+				$http.get(url).success(callback);
 			},
+
+
 			getApproverApproveStatus : function(params, callback)
 			{
 				var url = $filter('http_request_url')("get_approve_status", "nope" ,params)

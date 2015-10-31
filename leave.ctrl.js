@@ -328,7 +328,10 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 			if(!$scope.isOther)
 				result = $filter("checkPassMinimum")($scope.time_used, $scope.selectedType.LeaveType)
 			else
+			{
+
 				result = $filter("checkPassMinimum")($scope.time_used, Config.leaveOtherType)
+			}
 			
 			if(!result.status)
 			{
@@ -341,7 +344,9 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 
 			if(!$scope.isOther)
 				obj.LeaveType = $scope.selectedType.LeaveType;
+
 			else
+
 				obj.LeaveType = Config.leaveOtherType
 
 			obj.Subject = $scope.subject;
@@ -408,7 +413,9 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 				approve_obj.EmplID = $scope.user.EmplID
 				Query.approve( approve_obj, function(data){
 					alert(approve_item.selectedChoice.name + "เรียบร้อย");
-					$route.reload();
+					//change path to
+					//$route.reload();
+					$location.path('/approve');
 				})
 
 			}
@@ -427,7 +434,7 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 				$scope.approvers[index].disable = true;
 			}
 
-			if(index == 0 && angular.isUndefined(data_approve.Status)  )
+			if(index == 0 && (angular.isUndefined(data_approve.Status)  || data_approve.Status == Config.STATUS.SENDED))
 			{
 				console.log("should be able to edit")
 				$scope.canEdit = true;
@@ -476,8 +483,8 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 							console.log(obj)
 							$scope.checkAccess(obj);
 							$scope.DocStatus = obj.Status;
-							
-
+							$scope.DocLeaveType = obj.LeaveType;
+							$scope.isCantCancle = $filter('isCantCancle')(obj.LeaveType);
 							$scope.description = obj.Description;
 							Query.get("l_empltable", {"EmplID":obj.EmplID}, function(user){
 								$scope.user = user;
@@ -514,7 +521,21 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 									$scope.steps = [true, true, true, true];
 									//
 									$scope.isOther = false;
-									if(obj.LeaveType != Config.leaveOtherType)
+									if(obj.LeaveType == Config.leaveOtherType || obj.LeaveType == Config.leavePregnantType || obj.LeaveType == Config.leaveMonkType)
+									{
+										
+										$scope.Config = Config;
+										$scope.isOther = true;
+										console.log("other---type---")
+										for(var i=0; i < Config.leaveOtherTypes.length; i++)
+										{
+											console.log(Config.leaveOtherTypes[i])
+											if(Config.leaveOtherTypes[i].value == obj.LeaveType)
+												$scope.selectedOtherType = Config.leaveOtherTypes[i];
+										}
+
+										$scope.subject = obj.Subject;
+									}else
 									{
 										for(var i =0; i < $scope.leaves.length; i++)
 											if($scope.leaves[i].LeaveType == obj.LeaveType)
@@ -523,13 +544,9 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 												console.log('------ choice---- ' + i);
 												$scope.selectedType = $scope.leaves[i];
 											}
-
-									}else
-									{
-										$scope.isOther = true;
-										$scope.subject = obj.Subject;
-
+										
 									}
+
 									
 									$scope.updateDateTime();
 									$scope.mytime.setMilliseconds($scope.min_time.getMilliseconds())

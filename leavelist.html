@@ -11,8 +11,9 @@
 		<th></th>
 	</thead>
 	<tbody>
-		<tr ng-repeat="item in leaves | orderBy:'LeaveStartDate'">
-			<td>{{item.LeaveTransID}}</td>	
+		<tr ng-repeat="item in leaves | orderBy:'LeaveTransID'">
+			<td>{{item.LeaveTransID}}</td>
+			
 			<td>{{item.LeaveType | leaveType}}</td>
 			<td>{{item.LeaveStartDate | date:'dd/MM/yyyy'}}</td>
 			<td>{{item.LeaveEndDate | date:'dd/MM/yyyy'}}</td>

@@ -84,14 +84,24 @@
 		          <input ng-disabled="!isOwner" type="radio" name="pageNumber" ng-model="$parent.selectedType" ng-value="n" ng-click="updateType()" /> {{n.LeaveType | leaveType}} 
 		         </label>
 		         
+		         
 			 </td>
 			 <td ng-show="!isOwner && !isOther">
 			 	<label><input disable type="radio" checked /> {{selectedType.LeaveType | leaveType}}</label>
 			 </td>
-			 <td ng-show="isOther">
-			 	<label>ลาอื่น</label>
-			 	<input type="text" class="form-control" ng-model="subject" ng-disabled="!isOwner">
-			 </div>
+			
+			 
+		 </tr>
+		 <tr ng-show="isOther">
+			 <td width="40%"> <label ng-repeat="n in Config.leaveOtherTypes">
+			          <input required type="radio" name="pageNumber" ng-model="$parent.selectedOtherType" ng-value="n" ng-click="updateOtherType()" /> {{n.name}} &nbsp;&nbsp;
+			     </label></td>
+			 <td>
+			 	
+			 	
+			 	 <input type="text" placeholder="โปรดระบุหัวข้อการลา" ng-model="subject" class="form-control" required />
+			 	
+			 </td>
 			 
 		 </tr>
 		 <tr>
@@ -239,10 +249,7 @@
            ngf-max-height="1000" ngf-max-size="2MB">
       Select File</button>  <a ng-show="isUploads[1]" href="{{fileAddress[1]}}">Download</a></td>		 
 		 </tr>	
-		 <tr>
-		 	<td></td>
-		 	<td>{{isActualOwner}} {{isOwner}} {{canEdit}}</td>
-		 </tr>
+
 		 <tr ng-show="steps[2] && isActualOwner && (isOwner || canEdit)">
 		 	<td></td>
 		 	<td>
@@ -254,7 +261,7 @@
 		 				<input  ng-click="saveForm(2)" type="button" class="btn btn-primary" value="ส่งใบลา" style="width:100%;">
 		 			</div>
 		 			<div class="col-md-4">
-		 				<input  ng-click="saveForm(7)" type="button" class="btn btn-danger" value="ยกเลิก" style="width:100%;">
+		 				<input ng-disabled="isCantCancle" ng-click="saveForm(7)" type="button" class="btn btn-danger" value="ยกเลิก" style="width:100%;">
 		 			</div>
 		 		</div>
 
