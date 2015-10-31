@@ -1,4 +1,5 @@
 ﻿<?php
+error_reporting(E_ERROR | E_PARSE);
 session_start();
 require("./query.php");
 /*
@@ -600,7 +601,11 @@ if(isset($_GET) && isset($_GET['action']) )
 
 			}
 			
-		}else
+		}else if('l_cancle_leavetrans')
+		{
+
+		}
+		else
 			$data = $query->create($params);
 
 		echo json_encode($data);

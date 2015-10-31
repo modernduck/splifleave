@@ -9,7 +9,25 @@ var Config = {
 			{"name" : "ลาคลอด", "value":"04" },
 			{"name" : "ลาบวช", "value":"05" },
 			{"name" : "อื่นๆ", "value":"06" },
+			{"name" : "ยกเลิกลาป่วย", "value":"11", "from":"01" },
+			{"name" : "ยกเลิกลากิจ", "value":"12", "from":"02" },
+			{"name" : "ยกเลิกลาพักผ่อน", "value":"13", "from":"03" },
+			{"name" : "ยกเลิกลาคลอด", "value":"14", "from":"04" },
+			{"name" : "ยกเลิกลาบวช", "value":"15", "from":"05" },
+			{"name" : "ยกเลิกอื่นๆ", "value":"16", "from":"06" },
 	],
+	cancleLeaveTypes: [
+		{"name" : "ยกเลิกลาป่วย", "value":"11", "from":"01" },
+		{"name" : "ยกเลิกลากิจ", "value":"12", "from":"02" },
+		{"name" : "ยกเลิกลาพักผ่อน", "value":"13", "from":"03" },
+		{"name" : "ยกเลิกลาคลอด", "value":"14", "from":"04" },
+		{"name" : "ยกเลิกลาบวช", "value":"15", "from":"05" },
+		{"name" : "ยกเลิกอื่นๆ", "value":"16", "from":"06" },	
+	],
+	MESSAGES : {
+		"saveForm": "ได้ทำการส่งใบลาเรียบร้อยแล้วค่ะ",
+		"suffixApprove" : "เรียบร้อยแล้วค่ะ"
+	},
 	leaveOtherTypes : [
 		{"name" : "ลาคลอด", "value":"04", maxCount:90 },
 		{"name" : "ลาบวช", "value":"05",  minWorkYears:2, alertMessage:"อายุการทำงานน้อยกว่า2ปีไม่อาจลาบวชได้" },
@@ -37,14 +55,13 @@ var Config = {
 		"DENIED":4,
 		"REJECTED":5,
 		"ACKNOWLEDGED":6,
-		"PREAPPROVE1":8,
-		"PREAPPROVE2":9,
+		
 	},
 	status_names : {
 		1 : "DRAFT",
 		2 : "WAITING",
 		3 : "APPROVED",
-		4 : "DENIED",
+		4 : "REJECTED",
 		5 : "RETURN TO ADJUST",
 		6 : "ACKNOWLEDGED",
 		7 : "CANCLED",
@@ -107,6 +124,10 @@ angular.module("sick",['ui.bootstrap', 'leave.controller', 'ngRoute', 'approve.c
 				templateUrl:"canclelist.html",
 				controller:"CancleIndexCtrl"
 
+			})
+			.when('/cancle/create/:id', {
+				templateUrl:"create-cancle.html",
+				controller:"CancleCreateCtrl"
 			})
 	}])
 
@@ -334,6 +355,10 @@ angular.module("sick.filter", [])
 			{
 				return types;
 			},
+			getCancle : function()
+			{
+				return Config.cancleLeaveTypes;
+			},
 			find : function(type)
 			{
 				for(var i =0; i < types.length; i++)
@@ -355,7 +380,30 @@ angular.module("sick.filter", [])
 				return answers[type];
 			}
 		}])
-	
+	.filter("cancleType", ["LeaveTypes", function(LeaveTypes){
+		return function (type)
+		{
+			var types = LeaveTypes.getCancle();
+			var answers = [];
+				for(var i = 0; i < types.length; i++)
+				{
+					answers[types[i]["from"]] = types[i]["name"]
+				}
+			return answers[type];
+		}
+	}])
+	.filter("cancleTypeID", ["LeaveTypes", function(LeaveTypes){
+		return function (type)
+		{
+			var types = LeaveTypes.getCancle();
+			var answers = [];
+				for(var i = 0; i < types.length; i++)
+				{
+					answers[types[i]["from"]] = types[i]["value"]
+				}
+			return answers[type];
+		}
+	}])
 
 	.filter("isFromMainSite", function(){
 		return function (user)
@@ -511,6 +559,14 @@ angular.module("sick.filter", [])
 		return function (leaveType)
 		{
 			if(leaveType == Config.STATUS.REJECTED || leaveType == Config.STATUS.APPROVED)
+				return true;
+			return false;
+		}
+	})
+	.filter('isCantSend', function() {
+		return function (leaveType)
+		{
+			if(leaveType == Config.STATUS.SENDED)
 				return true;
 			return false;
 		}

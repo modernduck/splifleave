@@ -154,7 +154,7 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 				console.log(current_user)
 				Query.get("l_empltable", {"UserID":current_user.user}, function(user){
 					$scope.user = user;
-					Query.query("l_leavetable", {"EmplID":user.EmplID}, function(leaves){
+					Query.query("l_leavetable", {"EmplID":user.EmplID, "Status":"A"}, function(leaves){
 						$scope.leaves = leaves;
 					});
 					Query.query("l_holiday", {}, function (holidays){
@@ -210,7 +210,9 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 			Query.create('l_leavetrans', obj, function (data){
 				console.log('after create')
 				console.log(data)
-				$location.path("/read/"  + obj.LeaveTransID );
+				if(obj.Status == Config.STATUS.SENDED)
+					alert(Config.MESSAGES.saveForm);
+					$location.path("/read/"  + obj.LeaveTransID );
 			})
 		}
 
@@ -304,6 +306,8 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 			Query.create('l_leavetrans', obj, function (data){
 				console.log('after create-other')
 				console.log(data)
+				if(obj.Status == Config.STATUS.SENDED)
+					alert(Config.MESSAGES.saveForm);
 				$location.path("/read/"  + obj.LeaveTransID );
 			})
 		}
@@ -412,7 +416,7 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 
 				approve_obj.EmplID = $scope.user.EmplID
 				Query.approve( approve_obj, function(data){
-					alert(approve_item.selectedChoice.name + "เรียบร้อย");
+					alert(approve_item.selectedChoice.name + Config.MESSAGES.suffixApprove);
 					//change path to
 					//$route.reload();
 					$location.path('/approve');
@@ -485,6 +489,7 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 							$scope.DocStatus = obj.Status;
 							$scope.DocLeaveType = obj.LeaveType;
 							$scope.isCantCancle = $filter('isCantCancle')(obj.LeaveType);
+							$scope.isCantSend = $filter('isCantSend')(obj.Status);
 							$scope.description = obj.Description;
 							Query.get("l_empltable", {"EmplID":obj.EmplID}, function(user){
 								$scope.user = user;
@@ -498,7 +503,7 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 								console.log('gonna do l_leavetable' + user.EmplID)
 								console.log(user)
 								
-								Query.query("l_leavetable", {"EmplID":user.EmplID}, function(leaves){
+								Query.query("l_leavetable", {"EmplID":user.EmplID, "Status":"A"}, function(leaves){
 									$scope.leaves = leaves;				
 									
 									$scope.LeaveTransID = obj.LeaveTransID;
@@ -660,4 +665,136 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 
 		
 		
+	}])
+	.controller("CancleCreateCtrl",  ["$controller", "$scope", "$filter", "$routeParams", "Query", "LeaveTypes", "$location", "Config", "$route", function  ($controller, $scope, $filter, $routeParams, Query, LeaveTypes, $location, Config, $route){
+
+		angular.extend(this, $controller('LeaveReadCtrl', {
+			$scope: $scope,
+			$filter: $filter, 
+			$routeParams: $routeParams, 
+			Query: Query, 
+			LeaveTypes: LeaveTypes,
+			$location: $location,
+		}));
+		$scope.selectedType = Config.leaveTypes[Config.leaveTypes.length - 1];
+		$scope.Config = Config;
+		
+		$scope.saveForm = function()
+		{
+			var obj = {};
+			var result;
+			
+			obj.LeaveTransID = $scope.LeaveTransID;
+			obj.EmplID = $scope.user.EmplID;
+
+			obj.LeaveType = $scope.selectedType.LeaveType//Config.leaveOtherType;
+
+			obj.CreateDate = $filter('jsDateToSqlDate')(new Date());
+			obj.LeaveStartDate = $filter('jsDateToSqlDate')($scope.date_time_from);
+			obj.LeaveEndDate = $filter('jsDateToSqlDate')($scope.date_time_to);
+			obj.LeaveStartTime = $filter('jsTimeToSqlTime')($scope.mytime);
+			obj.LeaveEndTime = $filter('jsTimeToSqlTime')($scope.mytime2)
+			obj.Description = $scope.description;
+			obj.Subject = $scope.subject;
+			obj.TotalDay = $filter('leaveDays')($scope.time_used);
+			obj.TotalHour = $filter('leaveHours')($scope.time_used);
+			obj.TotalMin = $filter('leaveMinutes')($scope.time_used);
+			obj.Status = Config.STATUS.SENDED;
+
+			Query.create('l_cancle_leavetrans', obj, function (data){
+				console.log('after create-other')
+				console.log(data)
+				if(obj.Status == Config.STATUS.SENDED)
+					alert(Config.MESSAGES.saveForm);
+				$location.path("/cancle");
+			})
+		}
+
+		$scope.init = function()
+		{
+
+			
+			Query.getUser(function(current_user){	
+
+				Query.query("l_holiday", {}, function (holidays){
+						$scope.holidays = holidays;
+						Query.get("l_leavetrans", {"LeaveTransID": $routeParams.id}, function (obj){
+							$scope.checkAccess(obj);
+							
+							$scope.DocLeaveType = obj.LeaveType;
+							$scope.isCantCancle = $filter('isCantCancle')(obj.LeaveType);
+							$scope.isCantSend = $filter('isCantSend')(obj.Status);
+							$scope.description = obj.Description;
+							Query.get("l_empltable", {"EmplID":obj.EmplID}, function(user){
+								$scope.user = user;
+								//check owner
+								$scope.isOwner = (user.UserID == current_user.user) 
+								$scope.isActualOwner = (user.UserID == current_user.user) 
+								if($scope.isOwner)
+									$scope.isOwner = $filter('canEditForm')(obj.Status);
+								
+								Query.query("l_leavetable", {"EmplID":user.EmplID, "Status":"A"}, function(leaves){
+									$scope.leaves = leaves;				
+									
+									$scope.LeaveTransID = obj.LeaveTransID;
+									$scope.Description = obj.Description;
+									$scope.uploadDirectory = $scope.LeaveTransID;//for upload
+									$scope.date_time_from = $filter("sqlToJsDate")(obj.LeaveStartDate)
+									$scope.date_time_to = $filter("sqlToJsDate")(obj.LeaveEndDate)
+									$scope.mytime = $filter("sqlToJsTime")(obj.LeaveStartTime)
+									$scope.mytime2 = $filter("sqlToJsTime")(obj.LeaveEndTime)
+									if(obj.Attachment1 != null)
+									{
+										$scope.fileAddress[0] = obj.Attachment1;
+										$scope.isUploads[0] = true;
+									}
+									if(obj.Attachment2 != null)
+									{
+										$scope.fileAddress[1] = obj.Attachment2;
+										$scope.isUploads[1] = true;
+									}
+									$scope.steps = [true, true, true, true];
+									//
+									$scope.isOther = false;
+									if(obj.LeaveType == Config.leaveOtherType || obj.LeaveType == Config.leavePregnantType || obj.LeaveType == Config.leaveMonkType)
+									{
+										
+										$scope.Config = Config;
+										$scope.isOther = true;
+										console.log("other---type---")
+										for(var i=0; i < Config.leaveOtherTypes.length; i++)
+										{
+											console.log(Config.leaveOtherTypes[i])
+											if(Config.leaveOtherTypes[i].value == obj.LeaveType)
+												$scope.selectedOtherType = Config.leaveOtherTypes[i];
+										}
+
+										$scope.subject = obj.Subject;
+									}else
+									{
+										for(var i =0; i < $scope.leaves.length; i++)
+											if($scope.leaves[i].LeaveType == obj.LeaveType)
+											{
+
+												console.log('------ choice---- ' + i);
+												$scope.selectedType = $scope.leaves[i];
+											}
+										
+									}
+
+									
+									$scope.updateDateTime();
+									$scope.mytime.setMilliseconds($scope.min_time.getMilliseconds())
+									$scope.mytime2.setMilliseconds($scope.max_time.getMilliseconds())
+
+								});
+							});
+							
+							
+						})
+					
+				});
+			});
+		}	
+		$scope.init();
 	}])

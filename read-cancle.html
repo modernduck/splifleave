@@ -1,0 +1,209 @@
+<section >
+	<div align=left><h1 class=header1>รายการ ยกเลิกใบลา</h1></div>
+
+	<input type=hidden name=frmhide id=frmhide value="">
+	<input type=hidden name=orderby id=orderby value="<?=$_POST[orderby];?>">
+	<input type=hidden name=orderdirection id=orderdirection value="<?=$_POST[orderdirection];?>">
+	<input type=hidden name=ordercolumn id=ordercolumn value="<?=$_POST[ordercolumn];?>">
+
+	<br>
+	<!-- #############  รายละเอียดพนักงาน ################# -->
+	<div align=center style="padding:10px 0px 10px 0px;" align=center>
+	<fieldset style="width:80%" align=left>
+	<legend>
+
+	<table  border=0><tr><td align=center><b>รายละเอียดพนักงาน</b></td></table></legend>
+	<form ng-submit="saveForm()">
+	     <table style="width:80%" align=center>
+		  <tr>
+			  <td width="10%"></td>
+			 <td width="30%"></td>
+			 <td width="10%">รหัสเอกสาร</td>
+			 <td width="30%">{{ LeaveTransID }}<input type=hidden  name=""  value="" ></td>
+			 <td width="10%"></td>
+			 <td width="20%"></td>
+		 </tr>
+		  <tr>
+			 <td>ชื่อพนักงาน</td>
+			 <td>{{user.NameThai}}<input type="hidden"  name="" value="" ></td>
+			 <td>รหัส</td>
+			 <td>{{user.EmplID}}<input type=hidden  name=""  value="" ></td>
+			 <td>วันที่เริ่มงาน</td>
+			 <td>{{user.StartDate | date:'dd/MM/yyyy'}}<input type=hidden  name=""  value="" ></td>
+		 </tr>
+		 <tr>
+			 <td>แผนก</td>
+			 <td>{{user.Department2}}<input type="hidden"  name="" value="" ></td>
+			 <td>ตำแหน่ง</td>
+			 <td>{{user.Position}}<input type="hidden"  name="" value="" ></td>
+			 <td></td>
+			 <td></td>
+		 </tr>
+		  <tr>
+			 <td colspan="6">
+			 	<table class="table table-striped">
+			 		<thead style="background-color:#1395E0;color:white;">
+			 			<tr>
+			 				<th>ประเภท</th>
+			 				<th>วันเริ่ม</th>
+			 				<th>วันสุดท้าย</th>
+			 				<th>สิทธิ์</th>
+			 				<th>ใช้ไป</th>
+			 				<th>คงเหลือ</th>
+			 			</tr>
+			 		</thead>
+			 		<tbody>
+			 			<tr ng-repeat="item in leaves">
+			 				<td>{{item.LeaveType | leaveType}} </td>
+			 				<td>{{item.StartDate | date:"dd/MM/yyyy"}}</td>
+			 				<td>{{item.EndDate | date:"dd/MM/yyyy"}}</td>
+			 				<td>{{item.TotalQty | minToDays}} </td>
+			 				<td>{{item.Used | minToDays}} </td>
+			 				<td>{{item.TotalQty -  item.Used | minToDays}} </td>
+			 			</tr>
+			 		</tbody>
+			 	</table>
+
+
+			</td>
+			 
+		 </tr>
+			</table>
+			</form>	 
+				 			
+	  	</fieldset>
+	</div>
+
+	<!-- #############  รายละเอียดการลา ################# -->
+	<div align=center style="padding:10px 0px 10px 0px;" align=center>
+	<fieldset style="width:80%" align=left>
+	<legend>
+	<table  border=0><tr><td align=center><b>รายละเอียดการลา</b></td></table></legend>
+	     <table style="width:80%" align=center>
+		  <tr>
+			 <td width="20%"> </td>
+			 <td >
+			 
+			 	<label><input disable type="radio" checked /> {{selectedType.LeaveType | cancleType}}</label>
+			 </td>
+			
+			 
+		 </tr>
+		 <tr ng-show="isOther">
+			 <td width="40%"> <label ng-repeat="n in Config.leaveOtherTypes">
+			          <input required type="radio" name="pageNumber" ng-model="$parent.selectedOtherType" ng-value="n" ng-click="updateOtherType()" /> {{n.name}} &nbsp;&nbsp;
+			     </label></td>
+			 <td>
+			 	
+			 	
+			 	 <input type="text" placeholder="โปรดระบุหัวข้อการลา" ng-model="subject" class="form-control" required />
+			 	
+			 </td>
+			 
+		 </tr>
+		 <tr>
+		 	<td colspan="2">
+		 		<div class="row">
+		 			<div class="col-md-6">
+		 				<section ng-show="selectedType!=null || isOther">
+		 					<h4>เริ่มลา</h4>
+		 					<div>
+		 						<a ng-hide="true" href="" style="color:white;" class="btn btn-primary" ng-click="isShowDate = true;" ng-hide="isShowDate">เลือกวัน </a>
+			 	
+								 	<div style="display:inline-block; min-height:290px;position:relative" ng-show="isShowDate">
+								      <datepicker  ng-change="updateDateTime()" ng-model="date_time_from" min-date="minDate" max-date="maxDate" show-weeks="true" class="well well-sm" ></datepicker>
+								      <a class="btn btn-primary"  style="width:100%;color:white;" ng-click="isShowDate = false;steps[1]=true;" href="">ปิด</a>
+								      <input type="text"  ng-model="date_time_from" required  ng-show="false"  />
+								      
+								    </div>
+								    <span style="font-size:1.5em;" ng-hide="isOwner">วันที่ </span><span style="font-size:1.5em;">{{date_time_from | date:"dd/MM/yyyy"}}</span> <span style="font-size:1.5em;" ng-hide="isOwner">เวลา {{mytime.getHours() | stringDigit}} : {{mytime.getMinutes() | stringDigit}}</span> 
+								 	
+		 					</div>
+		 					<div>
+		 						<timepicker ng-hide="true" ng-change="updateDateTime()" ng-model="mytime"  hour-step="1" minute-step="30" show-meridian="false" min="min_time" max="max_time"></timepicker>
+			 					
+		 					</div>
+		 				</section>
+		 			</div>
+		 			<div class="col-md-6">
+		 				<section ng-show="steps[1]">
+		 					<h4>ถึง</h4>
+		 					<div>
+			 					<a ng-hide="true" href="" style="color:white;" class="btn btn-primary" ng-click="isShowDate2 = true;" ng-hide="isShowDate2">เลือกวัน </a>
+			 	
+							 	<div style="display:inline-block; min-height:290px;position:relative" ng-show="isShowDate2">
+							      <datepicker  ng-change="updateDateTime()" ng-model="date_time_to" max-date="maxDate" min-date="date_time_from" show-weeks="true" class="well well-sm" ></datepicker>
+							      <a class="btn btn-primary"  style="width:100%;color:white;" ng-click="isShowDate2 = false;steps[2]=true;" href="">ปิด</a>
+							      <input type="text"  ng-model="date_time_to" required  ng-show="false"  />
+							      
+							    </div>
+							    <span style="font-size:1.5em;" ng-hide="isOwner">วันที่ </span>
+							    <span style="font-size:1.5em;">{{date_time_to | date:"dd/MM/yyyy"}}</span>  <span style="font-size:1.5em;" ng-hide="isOwner">เวลา {{mytime2.getHours() | stringDigit}} : {{mytime2.getMinutes() | stringDigit}}</span>
+							 	
+							 </div>
+							<div>
+								<timepicker ng-hide="true" ng-change="updateDateTime()" ng-model="mytime2"  hour-step="1" minute-step="30" show-meridian="false" min="min_time" max="max_time"></timepicker>
+		 		
+							</div>
+		 				</section>
+		 			</div>
+		 		</div>
+		 	</td>
+		 </tr>
+		 
+		 <tr ng-show="steps[2]">
+		 
+			 <td colspan="2">
+			 	<div style="padding:20px;border:1px solid #189DC5;text-align:center;">
+
+				 	รวม จำนวน {{time_used | leaveDays}} วัน {{time_used | leaveHours}} ชั่วโมง {{time_used | leaveMinutes}} นาที <span style="color:red;">{{time_used | leaveStatus:selectedType}} </span>
+			 	</div>
+			 	<span style="color:red;" >{{time_used | minimumStatus:selectedType.LeaveType}}</span>
+			 </td>		 
+		 </tr>
+		 <tr ng-show="steps[2]">
+		 	<td></td>
+		 	<td style="height:20px;"></td>
+		 </tr>
+		 <tr ng-show="steps[2]" >
+		 	<td>หมายเหตุการลา</td>
+			 <td><textarea ng-disabled="true" class="form-control" ng-model="description"></textarea></td>		 
+		 </tr>
+		 <tr>
+		 	<td colspan="2" style="height:20px;" ></td>
+		 </tr>
+		 <tr ng-show="steps[2]">
+		 	<td></td>
+			 <td>เอกสารแนบ <button type="file" ngf-select="uploadFiles(0,$file, $invalidFiles)"
+           ngf-max-height="1000" ngf-max-size="2MB"> 
+      Select File</button> <a ng-show="isUploads[0]" href="{{fileAddress[0]}}">Download</a></td>		 
+		 </tr>
+		 <tr ng-show="steps[2]">
+		 	<td></td>
+			 <td>เอกสารแนบ <button type="file" ngf-select="uploadFiles(1,$file, $invalidFiles)"
+           ngf-max-height="1000" ngf-max-size="2MB">
+      Select File</button>  <a ng-show="isUploads[1]" href="{{fileAddress[1]}}">Download</a></td>		 
+		 </tr>	
+
+		 <tr >
+		 	<td></td>
+		 	<td>
+		 		<div class="row">
+		 			
+		 			<div class="col-md-12">
+		 				<input  n ng-click="saveForm(2)" type="button" class="btn btn-primary" value="ส่งคำร้อง" style="width:100%;">
+		 			</div>
+		 		</div>
+
+		 	</td> 
+		 </tr>
+			</table>
+		</form> 
+				 
+				
+	  	</fieldset>
+	</div>
+
+	<!-- #############  ผู้อนุมัติลำดับที่ 1 ################# -->
+	
+</section>

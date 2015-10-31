@@ -45,6 +45,8 @@
 			 		<thead style="background-color:#1395E0;color:white;">
 			 			<tr>
 			 				<th>ประเภท</th>
+			 				<th>วันเริ่ม</th>
+			 				<th>วันสุดท้าย</th>
 			 				<th>สิทธิ์</th>
 			 				<th>ใช้ไป</th>
 			 				<th>คงเหลือ</th>
@@ -53,6 +55,8 @@
 			 		<tbody>
 			 			<tr ng-repeat="item in leaves">
 			 				<td>{{item.LeaveType | leaveType}} </td>
+			 				<td>{{item.StartDate | date:"dd/MM/yyyy"}}</td>
+			 				<td>{{item.EndDate | date:"dd/MM/yyyy"}}</td>
 			 				<td>{{item.TotalQty | minToDays}} </td>
 			 				<td>{{item.Used | minToDays}} </td>
 			 				<td>{{item.TotalQty -  item.Used | minToDays}} </td>
