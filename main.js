@@ -55,8 +55,8 @@ var Config = {
 		"DENIED":4,
 		"REJECTED":5,
 		"ACKNOWLEDGED":6,
-		
-	},
+		"SENDED_CANCLE":9,
+	},	
 	status_names : {
 		1 : "DRAFT",
 		2 : "WAITING",
@@ -64,9 +64,8 @@ var Config = {
 		4 : "REJECTED",
 		5 : "RETURN TO ADJUST",
 		6 : "ACKNOWLEDGED",
-		7 : "CANCLED",
-		8 : "PREAPPROVE1",
-		9 : "PREAPPROVE2"
+		7 : "CANCEL",
+		9 : "WAITING(CANCEL)"
 
 	},
 	approver_choices : [
@@ -129,6 +128,15 @@ angular.module("sick",['ui.bootstrap', 'leave.controller', 'ngRoute', 'approve.c
 				templateUrl:"create-cancle.html",
 				controller:"CancleCreateCtrl"
 			})
+			.when('/cancle/read/:id', {
+				templateUrl:"read-cancle.html",
+				controller:"CancleReadCtrl"
+			})
+			.
+			when('/cancle/approve', {
+				templateUrl:"approvecancellist.html",
+				controller:"ApproveCancleIndexCtrl"
+			})
 	}])
 
 angular.module("sick.filter", [])
@@ -168,6 +176,16 @@ angular.module("sick.filter", [])
 			var days = minutes/60
 			days = days/8
 			return Math.floor(days * 10)/10;
+		}
+	})
+	.filter("minToText", function(){
+		return function (minutes)
+		{
+			var days = minutes/60
+			days =Math.floor(days/8);
+			var hours = minutes/60;
+			hours = hours % 8;
+			return days + " วัน " + hours + " ชั่วโมง";
 		}
 	})
 	.filter("daysToMins", function(){
@@ -622,14 +640,30 @@ angular.module('sick.model', [])
 				$http.get(url).success(callback);
 
 			},
+			getApproveCancleStatus : function(params, callback)
+			{
+				var url = $filter('http_request_url')("approve_cancle_status", "nope" ,params)
+				$http.get(url).success(callback);
+
+			},
 			approve : function(params, callback)
 			{
 				var url = $filter('http_request_url')("approve", "l_approvetrans" ,params)
 				$http.get(url).success(callback);
 			},
+			approveCancle : function(params, callback)
+			{
+				var url = $filter('http_request_url')("approve_cancle", "l_cancle_approvetrans" ,params)
+				$http.get(url).success(callback);
+			},
 			fetchApproveRequests :function (params, callback) {
 				// body...
 				var url = $filter('http_request_url')("fetch_approve_requests", "nope" ,params)
+				$http.get(url).success(callback);
+			},
+			fetchCancleApproveRequests :function (params, callback) {
+				// body...
+				var url = $filter('http_request_url')("fetch_cancle_approve_requests", "nope" ,params)
 				$http.get(url).success(callback);
 			},
 

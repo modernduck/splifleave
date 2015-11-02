@@ -57,9 +57,9 @@
 			 				<td>{{item.LeaveType | leaveType}} </td>
 			 				<td>{{item.StartDate | date:"dd/MM/yyyy"}}</td>
 			 				<td>{{item.EndDate | date:"dd/MM/yyyy"}}</td>
-			 				<td>{{item.TotalQty | minToDays}} </td>
-			 				<td>{{item.Used | minToDays}} </td>
-			 				<td>{{item.TotalQty -  item.Used | minToDays}} </td>
+			 				<td>{{item.TotalQty | minToText}} </td>
+			 				<td>{{item.Used | minToText}} </td>
+			 				<td>{{item.TotalQty -  item.Used | minToText}} </td>
 			 			</tr>
 			 		</tbody>
 			 	</table>
@@ -191,7 +191,7 @@
 		 		<div class="row">
 		 			
 		 			<div class="col-md-12">
-		 				<input  n ng-click="saveForm(2)" type="button" class="btn btn-primary" value="ส่งคำร้อง" style="width:100%;">
+		 				<!--<input  n ng-click="saveForm(2)" type="button" class="btn btn-primary" value="ส่งคำร้อง" style="width:100%;">-->
 		 			</div>
 		 		</div>
 
@@ -205,5 +205,78 @@
 	</div>
 
 	<!-- #############  ผู้อนุมัติลำดับที่ 1 ################# -->
+	<div ng-repeat="item in approvers" ng-show="item.show" align=center style="padding:10px 0px 10px 0px;" align=center>
+	<fieldset style="width:80%" align=left>
+	<legend>
+	<table  border=0><tr><td align=center><b>ผู้อนุมัติ</b></td></table></legend>
+	     <table style="width:80%" align=center>
+		  <tr>
+			 <td width="10%"> {{item.user.NameThai}}</td>
+			 
+		 </tr>
+		 <tr>
+			 <td> 
+			 	
+			 	<label><input ng-disabled="!item.isApprover || item.disable" type="radio" name="approve-{{item.id}}" ng-model="item.selectedChoice" ng-value="approvers_choices[0]">{{approvers_choices[0].name}}</label>
+
+				<label><input ng-disabled="!item.isApprover || item.disable" type="radio" name="approve-{{item.id}}" ng-model="item.selectedChoice" ng-value="approvers_choices[1]">{{approvers_choices[1].name}}</label>
+
+				<label><input  ng-disabled="!item.isApprover || item.disable" type="radio" name="approve-{{item.id}}" ng-model="item.selectedChoice" ng-value="approvers_choices[2]">{{approvers_choices[2].name}}</label>
+
+			 	<!--<select ng-disabled="!item.isApprover || item.disable" ng-options="n.name for n in approvers_choices" ng-model="item.selectedChoice"></select>-->
+			 	 
+		     </td>
+			
+		 </tr>
+		 <tr>
+			 <td>
+			 	หมายเหตุเพิ่มเติม<br/>
+			 	<textarea ng-disabled="!item.isApprover || item.disable" class="form-control" ng-model="item.mark"></textarea>
+
+			 </td>		 
+		 </tr>
+		 <tr>
+			 <td><br/>
+			 	<button ng-click="approve(item)"  ng-disabled="!item.isApprover || item.disable" class='btn btn-primary'>ยืนยัน</button>
+			 
+			 	
+			 </td>		 
+		 </tr>
+
+		 </table>
+			
+	  	</fieldset>
+	  	<!-- #############  HR ################# -->
 	
+	</div>
+	<div align=center style="padding:10px 0px 10px 0px;" align=center>
+	<fieldset style="width:80%" align=left>
+	<legend>
+	<table  border=0><tr><td align=center><b>แผนกบุคคลผู้รับเรื่อง</b></td></table></legend>
+	     <table style="width:80%" align=center>
+		  <tr>
+			 <td colspan="2"> {{hr.user.NameThai}}</td>
+			 
+		 </tr>
+		 <tr>
+			 <td colspan="2"> <input  ng-disabled="!hr.isHr|| hr.disable" type="checkbox" ng-model="hr.selectedChoice.value" ng-true-value="6"
+       ng-false-value="1" /> รับทราบ  {{hr.knownDate  | date:'dd/MM/yyyy'}} </td>
+		 </tr>
+		 <tr>
+			 <td colspan="2">
+			 	หมายเหตุเพิ่มเติม<br/>
+				<textarea  ng-disabled="!hr.isHr || hr.disable" class="form-control" ng-model="hr.mark"></textarea></td>		 
+		 </tr>
+		 <tr>
+
+			 <td colspan="2"><br/>
+			 	<button ng-click="approve(hr)"  ng-disabled="!hr.isHr || hr.disable" class='btn btn-primary'>ยืนยัน</button>
+			 
+			 	
+			 </td>		
+		 </tr>
+		 </table>
+			
+	  	</fieldset>
+	</div>
 </section>

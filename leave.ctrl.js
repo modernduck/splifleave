@@ -410,11 +410,13 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 				
 					approve_obj.Status = approve_item.selectedChoice.value;
 				if(angular.isString(approve_item.mark))
-					approve_obj.Remark = approve_item.mark;
+					approve_obj.Remark = encodeURI(approve_item.mark);
 				else
 					approve_obj.Remark = "";
-
+				console.log(approve_item);
+				console.log(approve_obj)
 				approve_obj.EmplID = $scope.user.EmplID
+
 				Query.approve( approve_obj, function(data){
 					alert(approve_item.selectedChoice.name + Config.MESSAGES.suffixApprove);
 					//change path to
@@ -798,3 +800,304 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 		}	
 		$scope.init();
 	}])
+	.controller("CancleReadCtrl",  ["$controller", "$scope", "$filter", "$routeParams", "Query", "LeaveTypes", "$location", "Config", "$route", function  ($controller, $scope, $filter, $routeParams, Query, LeaveTypes, $location, Config, $route){
+
+			angular.extend(this, $controller('LeaveCtrl', {
+				$scope: $scope,
+				$filter: $filter, 
+				$routeParams: $routeParams, 
+				Query: Query, 
+				LeaveTypes: LeaveTypes,
+				$location: $location,
+			}));
+			$scope.selectedType = Config.leaveTypes[Config.leaveTypes.length - 1];
+			$scope.Config = Config;
+		
+
+			$scope.init = function()
+		{
+
+			
+			Query.getUser(function(current_user){	
+
+				Query.query("l_holiday", {}, function (holidays){
+						$scope.holidays = holidays;
+						Query.get("l_cancle_leavetrans", {"LeaveTransID": $routeParams.id}, function (obj){
+							$scope.checkAccess(obj);
+							
+							$scope.DocLeaveType = obj.LeaveType;
+							$scope.isCantCancle = $filter('isCantCancle')(obj.LeaveType);
+							$scope.isCantSend = $filter('isCantSend')(obj.Status);
+							$scope.description = obj.Description;
+							Query.get("l_empltable", {"EmplID":obj.EmplID}, function(user){
+								$scope.user = user;
+								//check owner
+								$scope.isOwner = (user.UserID == current_user.user) 
+								$scope.isActualOwner = (user.UserID == current_user.user) 
+								if($scope.isOwner)
+									$scope.isOwner = $filter('canEditForm')(obj.Status);
+								
+								Query.query("l_cancle_leavetable", {"EmplID":user.EmplID, "Status":"A"}, function(leaves){
+									$scope.leaves = leaves;				
+									
+									$scope.LeaveTransID = obj.LeaveTransID;
+									$scope.Description = obj.Description;
+									$scope.uploadDirectory = $scope.LeaveTransID;//for upload
+									$scope.date_time_from = $filter("sqlToJsDate")(obj.LeaveStartDate)
+									$scope.date_time_to = $filter("sqlToJsDate")(obj.LeaveEndDate)
+									$scope.mytime = $filter("sqlToJsTime")(obj.LeaveStartTime)
+									$scope.mytime2 = $filter("sqlToJsTime")(obj.LeaveEndTime)
+									if(obj.Attachment1 != null)
+									{
+										$scope.fileAddress[0] = obj.Attachment1;
+										$scope.isUploads[0] = true;
+									}
+									if(obj.Attachment2 != null)
+									{
+										$scope.fileAddress[1] = obj.Attachment2;
+										$scope.isUploads[1] = true;
+									}
+									$scope.steps = [true, true, true, true];
+									//
+									$scope.isOther = false;
+									if(obj.LeaveType == Config.leaveOtherType || obj.LeaveType == Config.leavePregnantType || obj.LeaveType == Config.leaveMonkType)
+									{
+										
+										$scope.Config = Config;
+										$scope.isOther = true;
+										console.log("other---type---")
+										for(var i=0; i < Config.leaveOtherTypes.length; i++)
+										{
+											console.log(Config.leaveOtherTypes[i])
+											if(Config.leaveOtherTypes[i].value == obj.LeaveType)
+												$scope.selectedOtherType = Config.leaveOtherTypes[i];
+										}
+
+										$scope.subject = obj.Subject;
+									}else
+									{
+										for(var i =0; i < $scope.leaves.length; i++)
+											if($scope.leaves[i].LeaveType == obj.LeaveType)
+											{
+
+												console.log('------ choice---- ' + i);
+												$scope.selectedType = $scope.leaves[i];
+											}
+										
+									}
+
+									
+									$scope.updateDateTime();
+									$scope.mytime.setMilliseconds($scope.min_time.getMilliseconds())
+									$scope.mytime2.setMilliseconds($scope.max_time.getMilliseconds())
+
+									$scope.approvers = [];
+									Query.get("l_approverlist", {"EmplID":user.EmplID}, function (data){
+										if(data.Approver1 != null && data.Approver1 != "")
+										{
+											$scope.approvers[0] = {show:true, disable:false, id:"1"}
+											
+											Query.get("l_empltable", {"EmplID":data.Approver1}, function (approver1)
+											{
+												$scope.approvers[0].user = approver1;
+												
+												if(current_user.user == $scope.approvers[0].user.UserID)
+												{
+													$scope.approvers[0].isApprover = true;
+
+												}else
+													$scope.approvers[0].isApprover = false;
+
+											});
+											Query.getApproveCancleStatus({LeaveTransID: $scope.LeaveTransID, Approve:data.Approver1}, function(data_approve){
+												console.log('cancle #1')
+												console.log(data_approve)
+												$scope.loadApprovData(0, data_approve);
+											}) 
+
+										}else
+											$scope.approvers[0] = {show:false}
+										if(data.Approver2 != null && data.Approver2!="")
+										{
+											$scope.approvers[1] = {show:true, disable:false, id:"2"}
+											Query.get("l_empltable", {"EmplID":data.Approver2}, function (approver2)
+											{
+												$scope.approvers[1].user = approver2;
+
+												if(current_user.user == $scope.approvers[1].user.UserID)
+													$scope.approvers[1].isApprover = true;
+												else
+													$scope.approvers[1].isApprover = false;
+											});
+											Query.getApproveCancleStatus({LeaveTransID: $scope.LeaveTransID, Approve:data.Approver2}, function(data_approve){
+												console.log('cancle #2')
+												console.log(data_approve)
+												$scope.loadApprovData(1, data_approve);
+											}) 
+										}else
+											$scope.approvers[1] = {show:false}
+
+										if(data.Approver3 != null && data.Approver3!="")
+										{
+											$scope.approvers[2] = {show:true, disable:false, id:"3"}
+											Query.get("l_empltable", {"EmplID":data.Approver3}, function (approver3)
+											{
+												$scope.approvers[2].user = approver3;
+												if(current_user.user == $scope.approvers[2].user.UserID)
+													$scope.approvers[2].isApprover = true;
+												else
+													$scope.approvers[2].isApprover = false;
+											});
+											Query.getApproveCancleStatus({LeaveTransID: $scope.LeaveTransID, Approve:data.Approver3}, function(data_approve){
+												console.log('cancle #3')
+												console.log(data_approve)
+												$scope.loadApprovData(2, data_approve);
+											}) 
+										}else
+											$scope.approvers[2] = {show:false}
+
+										if(data.HRID != null)
+										{
+											var now = new Date();
+											$scope.hr = {show:true, disable:false, knownDate:now, selectedChoice:{name:"รับทราบ"}, mark:"" }
+											Query.get("l_empltable", {"EmplID":data.HRID}, function (hr)
+											{
+												$scope.hr.user = hr;
+												;
+												if(current_user.user == $scope.hr.user.UserID)
+													$scope.hr.isHr = true;
+												else
+													$scope.hr.isHr= false;				
+												console.log("hr")
+												console.log($scope.hr)
+												console.log("user")
+												console.log(current_user)
+												console.log((current_user.user == $scope.hr.user.UserID))
+												Query.getApproveCancleStatus({LeaveTransID: $scope.LeaveTransID, Approve:data.HRID}, function(data_approve){
+													console.log('cancle #4')
+												console.log(data_approve)
+													if(data_approve.Status == Config.STATUS.ACKNOWLEDGED)
+													{
+														$scope.hr.disable = true;
+														$scope.hr.selectedChoice.value = Config.STATUS.ACKNOWLEDGED
+													}else
+														$scope.hr.selectedChoice.value = Config.STATUS.DRAFT
+												}) 
+											});
+
+											
+										}
+											
+									})
+
+
+								});
+							});
+							
+							
+						})
+					
+				});
+			});
+		}	
+		$scope.init();
+
+		//load old one code dup
+		$scope.approvers = [];
+		$scope.approvers_choices =  Config.approver_choices;
+		$scope.isOwner = false;
+		$scope.hr = null;
+		$scope.checkAccess = function(obj)
+		{
+			if(obj.Status == Config.STATUS.CANCLED )
+			{
+				alert(Config.LEAVE_DENIED_ACCESS_MESSAGE.CANCLED)
+				$location.path("/");
+			}
+		}
+
+		$scope.approve = function(approve_item, isHr)
+		{
+			if(!angular.isObject(approve_item.selectedChoice) || approve_item.selectedChoice == null)
+				alert(Config.DONT_FORGET.APPROVE)
+			else
+			{
+				//alert("approve na")
+				console.log(approve_item)
+				//could be uupdate
+				var approve_obj = {}
+				approve_obj.LeaveTransID = $scope.LeaveTransID;
+				approve_obj.Approve = approve_item.user.EmplID;
+				
+					approve_obj.Status = approve_item.selectedChoice.value;
+				if(angular.isString(approve_item.mark))
+					approve_obj.Remark = encodeURI(approve_item.mark);
+				else
+					approve_obj.Remark = "";
+				console.log(approve_item);
+				console.log(approve_obj)
+				approve_obj.EmplID = $scope.user.EmplID
+
+				Query.approveCancle( approve_obj, function(data){
+					alert(approve_item.selectedChoice.name + Config.MESSAGES.suffixApprove);
+					//change path to
+					//$route.reload();
+					$location.path('/cancle/aprove');
+				})
+
+			}
+			
+		}
+
+
+
+
+		$scope.canEdit = false;
+		$scope.loadApprovData = function(index, data_approve)
+		{
+			
+			if(data_approve !== null && index > 0 && angular.isUndefined( $scope.approvers[index -1].selectedChoice ))
+			{
+				$scope.approvers[index].disable = true;
+			}
+
+			if(index == 0 && (angular.isUndefined(data_approve.Status)  || data_approve.Status == Config.STATUS.SENDED))
+			{
+				console.log("should be able to edit")
+				$scope.canEdit = true;
+			}
+			
+			if(data_approve !== null)
+			{
+				console.log("---data_approve-- at index " + index)
+				
+				$scope.approvers[index].mark = data_approve.Remark;
+				for(var i =0; i < Config.approver_choices.length ;i++)
+				{
+					console.log(Config)
+					//console.log(Config.approver_choices[i].value + "vs " + data_approve.Status + " = " + ($scope.approvers_choices[i].value == data_approve.Status))
+					//if older one dont activate make it disable
+					
+					if(Config.approver_choices[i].value == data_approve.Status)
+					{
+
+						$scope.approvers[index].selectedChoice = $scope.approvers_choices[i]
+						console.log("result at " + i + " should be" + $scope.approvers_choices[i])
+						console.log($scope.approvers[index].selectedChoice)
+					}
+				}
+				if(data_approve.Status == Config.STATUS.APPROVED)
+					$scope.approvers[index].disable = true;
+
+
+				if(angular.isUndefined($scope.approvers[index].selectedChoice) ||$scope.approvers[index].selectedChoice.value != Config.STATUS.APPROVED)
+					$scope.hr.disable = true;
+				//check if all aprrove
+
+			}else
+				$scope.approvers[index].show = false;
+		}
+
+
+
+		}]);

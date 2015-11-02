@@ -72,17 +72,20 @@ function findEmailsByEmplID ($ids)
 	return $result;
 }
 
-function getCurrentTrans($LeaveTransID, $Approve)
+function getCurrentTrans($LeaveTransID, $Approve, $isCancle = false)
 {
-		$sql = "SELECT *  FROM `l_approvetrans` WHERE `LeaveTransID` = '{$LeaveTransID}' AND `Approve` = '{$Approve}' Order By `ApproveTransID` DESC LIMIT 0,1";
-	//	echo $sql;
-		mysql_query("SET NAMES 'utf8'");
-		$dbquery = mysql_query($sql);
-		$result = mysql_fetch_assoc($dbquery);
-		return $result;
+	$table = "l_approvetrans";
+	if($isCancle)
+		$table = "l_cancle_approvetrans";
+	$sql = "SELECT *  FROM `{$table}` WHERE `LeaveTransID` = '{$LeaveTransID}' AND `Approve` = '{$Approve}' Order By `ApproveTransID` DESC LIMIT 0,1";
+//	echo $sql;
+	mysql_query("SET NAMES 'utf8'");
+	$dbquery = mysql_query($sql);
+	$result = mysql_fetch_assoc($dbquery);
+	return $result;
 }
 
-function isLeavePass($leave_trans, $doc_owner_id)
+function isLeavePass($leave_trans, $doc_owner_id, $isCancle = false)
 {
 	$PASS_STATUS = 3;
 	$sql = 	"SELECT * FROM `l_approverlist` WHERE EmplID = '{$doc_owner_id}'";
@@ -101,7 +104,7 @@ function isLeavePass($leave_trans, $doc_owner_id)
 		{
 			//echo 'asd';
 			//echo $result[$item].',';
-			$result2 = getCurrentTrans($leave_trans, $result[$item]);
+			$result2 = getCurrentTrans($leave_trans, $result[$item], $isCancle);
 			array_push($status, $result2['Status']);
 			$isWho[$item] = true;
 			$approver_ids[$item] = $result[$item];
@@ -114,6 +117,8 @@ function isLeavePass($leave_trans, $doc_owner_id)
 		if($isPass)
 			$order_approve++;
 	}
+	if($order_approve <= 0)
+		$isPass = false;
 	return array(
 		"result" => $isPass,
 		"sql" => $sql,
@@ -125,18 +130,29 @@ function isLeavePass($leave_trans, $doc_owner_id)
 	);
 }
 
-function markAsWaiting($leave_trans, $approver_id)
+function markAsWaiting($leave_trans, $approver_id, $isCancle = false)
 {
-	$query = new Query('l_approvetrans');
+	
+	$status = 2;//WAITING
+	$query;
+	if($isCancle)
+	{
+		$query = new Query('l_cancle_approvetrans');
+	}else
+	{
+		$query = new Query('l_approvetrans');
+
+	}
+		
 	return $query->create(array(
 		"LeaveTransID" => $leave_trans,
 		"Approve" => $approver_id,
-		"Status" => 2
+		"Status" => $status
 	));
 
 }
 
-function notifyLeaveTrans($leave_trans ,$owner_id, $message)
+function notifyLeaveTrans($leave_trans ,$owner_id, $message, $isCancle = false)
 {
 	$sql = 	"SELECT * FROM `l_approverlist` WHERE EmplID = '{$owner_id}'";
 	mysql_query("SET NAMES 'utf8'");
@@ -155,7 +171,10 @@ function notifyLeaveTrans($leave_trans ,$owner_id, $message)
 		}
 	}
 	$approver_id = $approver_ids["Approver1"];
-	markAsWaiting($leave_trans, $approver_id);
+	if($isCancle)
+		markAsWaiting($leave_trans, $approver_id, true);
+	else
+		markAsWaiting($leave_trans, $approver_id);
 	$emails = findEmailsByEmplID($approver_ids);
 	$result = array();
 	foreach ($emails as $email) {
@@ -274,10 +293,17 @@ if(isset($_GET) && isset($_GET['action']) )
 				"result" => "fail",
 				"message" => "not any approve"
 			));
-	}else if($action == "approve")
+	}else if($action == "approve" || $action == "approve_cancle")
 	{
 		$params = $_GET['params'];
 		$query = new Query('l_approvetrans');
+		$isCancle = false;
+		if($action == "approve_cancle")
+		{
+			$query = new Query('l_cancle_approvetrans');
+			$isCancle = true;
+		}
+
 		//should lock with current login user
 		$current_status = $params['Status'];
 
@@ -290,7 +316,7 @@ if(isset($_GET) && isset($_GET['action']) )
 		);
 		//
 
-		$result = isLeavePass($params['LeaveTransID'], $EmplID);
+		$result = isLeavePass($params['LeaveTransID'], $EmplID, $isCancle);
 
 
 		$approvers_ids = $result['approvers_ids'];
@@ -364,11 +390,20 @@ if(isset($_GET) && isset($_GET['action']) )
 
 			//send email to hr
 			$hr_result = sendEmail($hr_email, "Leave's form {$params['LeaveTransID']} have been Approved and Ready to be acknowledged", "Leave's form {$params['LeaveTransID']} have been approved. You could view a form at $url");
-			markAsWaiting($params['LeaveTransID'], $hr_id);
+			markAsWaiting($params['LeaveTransID'], $hr_id, $isCancle);
 			//update leavesTran
+
 			$query = new Query('l_leavetrans');
+			$newStatus = 3;
+
+			if($isCancle)
+			{
+				
+				$newStatus = 7;
+			}
+
 			$query->update(array(
-				"Status" => 3
+				"Status" => $newStatus
 			), "LeaveTransID = {$params['LeaveTransID']}");
 			
 			$_query = new Query('l_leavetrans');
@@ -384,10 +419,11 @@ if(isset($_GET) && isset($_GET['action']) )
 			));
 			$old_leave_min = $old_leave['Used'];
 			//current leave trans min
-
 			$current_leave_min = $leave_tran["TotalDay"] * 8 * 60 + $leave_tran["TotalHour"] * 60 + $leave_tran["TotalMin"];
-
-			$new_min = $old_leave_min + $current_leave_min;
+			if($isCancle)
+				$new_min = $old_leave_min - $current_leave_min;
+			else
+				$new_min = $old_leave_min + $current_leave_min;
 
 			$_update_query = new Query('l_leavetable');
 			$_update_query->update(array(
@@ -402,7 +438,8 @@ if(isset($_GET) && isset($_GET['action']) )
 				"hr_emails" => $hr_emails,
 				"hr_result" => $hr_result,
 				"email_id_list" => $email_id_list,
-
+				"isCancle" => $isCancle,
+				"order_approve" => $order_approve,
 			));
 
 		}else if($params["Status"] == 5){
@@ -417,7 +454,10 @@ if(isset($_GET) && isset($_GET['action']) )
 				$result_email[$id] = sendEmail($email['email'], "ใบลา {$params['LeaveTransID']} ถูกให้กลับไปแก้ใหม่", $message);
 			}
 			//update status
-			$query = new Query('l_leavetrans');
+			if($isCancle)
+				$query = new Query('l_cancle_leavetrans');
+			else
+				$query = new Query('l_leavetrans');
 			$query->update(array(
 				"Status" => 5
 			), "LeaveTransID = {$params['LeaveTransID']}");
@@ -438,11 +478,11 @@ if(isset($_GET) && isset($_GET['action']) )
 			{
 				//pass alrady 1 which mean need to approve number 2
 				$next_approver_id = $email_id_list["Approver2"];;
-				markAsWaiting($params['LeaveTransID'], $next_approver_id);
+				markAsWaiting($params['LeaveTransID'], $next_approver_id, $isCancle);
 			}else if($result['order_approve'] == 2 )
 			{
 				$next_approver_id = $email_id_list["Approver3"];;
-				markAsWaiting($params['LeaveTransID'], $next_approver_id);
+				markAsWaiting($params['LeaveTransID'], $next_approver_id, $isCancle);
 			}
 			
 			foreach ($emails as $id => $email) {
@@ -475,7 +515,10 @@ if(isset($_GET) && isset($_GET['action']) )
 				# code...
 				$result_email[$id] = sendEmail($email['email'], "Leave's form {$params['LeaveTransID']} have been denied!", "To {$id} Leave's form {$params['LeaveTransID']} have been denied! due to {$params['Remark']} from user {$_SESSION['adm_user_name']}");
 			}
-			$query = new Query('l_leavetrans');
+			if($isCancle)
+				$query = new Query('l_cancle_leavetrans');
+			else
+				$query = new Query('l_leavetrans');
 			$query->update(array(
 				"Status" => 4
 			), "LeaveTransID = {$params['LeaveTransID']}");
@@ -527,12 +570,52 @@ if(isset($_GET) && isset($_GET['action']) )
 			echo json_encode( $result );
 		else
 			echo json_encode(null);
-	}else if($action == "fetch_approve_requests")
+	}else if($action == "approve_cancle_status")
+	{
+		$params = $_GET['params'];
+		$sql = "SELECT *  FROM `l_cancle_approvetrans` WHERE `LeaveTransID` = '{$params['LeaveTransID']}' AND `Approve` = '{$params['Approve']}' Order By `ApproveTransID` DESC LIMIT 0,1";
+
+
+
+		mysql_query("SET NAMES 'utf8'");
+		$dbquery = mysql_query($sql);
+		$result = mysql_fetch_assoc($dbquery);
+		if($result)
+			echo json_encode( $result );
+		else
+			echo json_encode(null);
+	}
+
+	else if($action == "fetch_approve_requests")
 	{
 		$params = $_GET['params'];
 		$approve_id = $params['approve_id'];
+		if(isset($params['Status']))
+			$status = $params['Status'];
+		else
+			$status = 2;
 		$sql = "SELECT `l_leavetrans`.Status, NameThai, `l_leavetrans`.LeaveTransID, `l_leavetrans`.LeaveStartDate, `l_leavetrans`.LeaveEndDate, `l_leavetrans`.LeaveType FROM `l_leavetrans`";
-		$sql = $sql." LEFT JOIN `l_empltable` ON `l_empltable`.EmplID = `l_leavetrans`.EmplID LEFT JOIN `l_approvetrans` ON `l_approvetrans`.`LeaveTransID` =  `l_leavetrans`.`LeaveTransID` WHERE `l_approvetrans`.`Status` = 2 AND `l_approvetrans`.`Approve` = {$approve_id}";
+		$sql = $sql." LEFT JOIN `l_empltable` ON `l_empltable`.EmplID = `l_leavetrans`.EmplID LEFT JOIN `l_approvetrans` ON `l_approvetrans`.`LeaveTransID` =  `l_leavetrans`.`LeaveTransID` WHERE `l_approvetrans`.`Status` = {$status} AND `l_approvetrans`.`Approve` = {$approve_id}";
+		mysql_query("SET NAMES 'utf8'");
+		$dbquery = mysql_query($sql);
+		//$result= mysql_fetch_array($dbquery);
+		
+		$result = array();
+		while ($row = mysql_fetch_assoc($dbquery)) 
+			array_push($result, $row);
+		
+		echo json_encode($result);
+	}
+	else if($action == "fetch_cancle_approve_requests")
+	{
+		$params = $_GET['params'];
+		$approve_id = $params['approve_id'];
+		if(isset($params['Status']))
+			$status = $params['Status'];
+		else
+			$status = 2;
+		$sql = "SELECT `l_cancle_leavetrans`.Status, NameThai, `l_cancle_leavetrans`.LeaveTransID, `l_cancle_leavetrans`.LeaveStartDate, `l_cancle_leavetrans`.LeaveEndDate, `l_cancle_leavetrans`.LeaveType FROM `l_cancle_leavetrans`";
+		$sql = $sql." LEFT JOIN `l_empltable` ON `l_empltable`.EmplID = `l_cancle_leavetrans`.EmplID LEFT JOIN `l_cancle_approvetrans` ON `l_cancle_approvetrans`.`LeaveTransID` =  `l_cancle_leavetrans`.`LeaveTransID` WHERE `l_cancle_approvetrans`.`Status` = {$status} AND `l_cancle_approvetrans`.`Approve` = {$approve_id}";
 		mysql_query("SET NAMES 'utf8'");
 		$dbquery = mysql_query($sql);
 		//$result= mysql_fetch_array($dbquery);
@@ -590,7 +673,7 @@ if(isset($_GET) && isset($_GET['action']) )
 						"EmplID" =>$params->EmplID
 					));
 					$url = "http://leave.splifetech.com/leave/sick.php#/read/{$params->LeaveTransID}";
-					$message = "ขณะนี้ท่านมีรายการรออนุมัติ 1 รายการ จาก คุณ {$info['NameThai']} เลขที่ {$params->LeaveTransID} (รหัสเอกสาร) ซึ่งสามารถใช้งานภายในบริษัทผ่าน ลิงค์ (ที่สามารถเข้าไปอนุมัติรายการได้เลย ไม่ต้อง login) หรือ หากเข้าผ่านเว็บไซต์ กรุณากดลิงค์ http://58.97.116.246:9191/leave/ ";
+					$message = "ขณะนี้ท่านมีรายการรออนุมัติ 1 รายการ จาก คุณ {$info['NameThai']} เลขที่ {$params->LeaveTransID} (รหัสเอกสาร) ซึ่งสามารถใช้งานภายในบริษัทผ่าน ลิงค์  หรือ หากเข้าผ่านเว็บไซต์ กรุณากดลิงค์ http://58.97.116.246:9191/leave/ ";
 					$response = notifyLeaveTrans($params->LeaveTransID, $params->EmplID, $message);
 					$data= array(
 						'data' => $data,
@@ -603,7 +686,14 @@ if(isset($_GET) && isset($_GET['action']) )
 			
 		}else if('l_cancle_leavetrans')
 		{
-
+			$data = $query->create($params);
+			$params->LeaveTransID;
+			$message = "ขณะนี้ท่านมีรายการรออนุมัติ 1 รายการ จาก คุณ {$info['NameThai']} เลขที่ {$params->LeaveTransID}  ซึ่งสามารถใช้งานภายในบริษัทผ่าน ลิงค์  หรือ หากเข้าผ่านเว็บไซต์ กรุณากดลิงค์ http://58.97.116.246:9191/leave/ ";
+			$response = notifyLeaveTrans($params->LeaveTransID, $params->EmplID, $message, true);
+			$data= array(
+				'data' => $data,
+				'result' => $response,
+			);
 		}
 		else
 			$data = $query->create($params);
