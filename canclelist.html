@@ -7,17 +7,26 @@
 		<th>ประเภทการลา</th>
 		<th>วันที่เริ่มลา</th>
 		<th>วันที่สิ้นสุดการลา</th>
+		
+		<th>เวลาที่เริ่มลา</th>
+		<th>เวลาที่สิ้นสุดการลา</th>
 		<th>สถานะ</th>
+		<th>วันที่ทำรายการ</th>
 		<th></th>
 	</thead>
 	<tbody>
 		<tr ng-repeat="item in leaves | orderBy:'LeaveStartDate'">
-			<td>{{item.LeaveTransID}}</td>	
+			<td>{{item.LeaveTransID}}</td>
+			
 			<td>{{item.LeaveType | leaveType}}</td>
 			<td>{{item.LeaveStartDate | date:'dd/MM/yyyy'}}</td>
 			<td>{{item.LeaveEndDate | date:'dd/MM/yyyy'}}</td>
+			
+			<td>{{item.LeaveStartTime}}</td>
+			<td>{{item.LeaveEndTime}}</td>
 			<td>{{item.Status | getLeaveStatus}}</td>
-			<td><a href="" ng-click="cancle(item)">ยกเลิก</a></td>
+			<td>{{item.CreateDate}}</td>
+			<td><a href="#/cancle/read/{{item.LeaveTransID}}">ยกเลิก</a></td>
 		</tr>
 	</tbody>
 </table>

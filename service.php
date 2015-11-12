@@ -370,7 +370,7 @@ if(isset($_GET) && isset($_GET['action']) )
 		if($params['Status'] == 6)
 		{
 			//CASE 6 HR APPROVE
-			$url = "http://leave.splifetech.com/leave/sick.php#/read/{$params['LeaveTransID']}";
+			$url = "snapacorp/leave/sick.php#/read/{$params['LeaveTransID']}";
 			sendEmail($owner_email, "Leave's form {$params['LeaveTransID']} have been acknowledged", "Leave's form {$params['LeaveTransID']} have been acknowledged {$url} ");
 			sendEmail($hr_email, "Leave's form {$params['LeaveTransID']} have been acknowledged", "Leave's form {$params['LeaveTransID']} have been acknowledged {$url} ");
 			echo json_encode(array(
@@ -382,7 +382,7 @@ if(isset($_GET) && isset($_GET['action']) )
 			//CASE APPROVE AND IS PASS
 
 			$result_email = array();
-			$url = "http://leave.splifetech.com/leave/sick.php#/read/{$params['LeaveTransID']}";
+			$url = "snapacorp/leave/sick.php#/read/{$params['LeaveTransID']}";
 			foreach ($emails as $id => $email) {
 				# code...
 				$result_email[$id] = sendEmail($email['email'], "Leave's form {$params['LeaveTransID']} have been Approved", "Leave's form {$params['LeaveTransID']} have been approved. You could view a form at $url");
@@ -444,7 +444,7 @@ if(isset($_GET) && isset($_GET['action']) )
 
 		}else if($params["Status"] == 5){
 			//CASE GO BACK AND RE EDIT
-			$email_result =sendEmail($owner_email, "Your Leave's form {$params['LeaveTransID']} need to be re-edit", "Your leave form need to be re-edit you could edit and resend again http://leave.splifetech.com/leave/sick.php#/read/{$params['LeaveTransID']}");
+			$email_result =sendEmail($owner_email, "Your Leave's form {$params['LeaveTransID']} need to be re-edit", "Your leave form need to be re-edit you could edit and resend again snapacorp/leave/sick.php#/read/{$params['LeaveTransID']}");
 			//mail to anyone before that
 			$older_emails = findEmailsByEmplID($older_approve_email_id_list);
 			foreach ($older_emails as $id => $email) {
@@ -470,7 +470,7 @@ if(isset($_GET) && isset($_GET['action']) )
 		}else if($params["Status"] == 3)
 		{
 			//CASE APPROVE BUT NOT ALL PASS
-			$url = "http://leave.splifetech.com/leave/sick.php#/read/{$params['LeaveTransID']}";
+			$url = "snapacorp/leave/sick.php#/read/{$params['LeaveTransID']}";
 			$result_email = array();
 			
 
@@ -488,8 +488,9 @@ if(isset($_GET) && isset($_GET['action']) )
 			foreach ($emails as $id => $email) {
 				# code...
 				//send to every one but self? and so id could not be the same as
-				$message = "ขณะนี้ท่านมีรายการรออนุมัติ 1 รายการ จาก คุณ {$info['NameThai']} เลขที่ {$params->LeaveTransID} (รหัสเอกสาร) ซึ่งสามารถใช้งานภายในบริษัทผ่าน ลิงค์ (ที่สามารถเข้าไปอนุมัติรายการได้เลย ไม่ต้อง login) หรือ หากเข้าผ่านเว็บไซต์ กรุณากดลิงค์ http://58.97.116.246:9191/leave/ ";
-				$result_email[$id] = sendEmail($email['email'], "Leave's form {$params['LeaveTransID']} have been preapprove (#{$id})", "Leave's form {$params['LeaveTransID']} have been preapproved you could view at {$url}");
+				$url = "snapacorp/leave/sick.php#/approve";
+				$message = "ขณะนี้ท่านมีรายการรออนุมัติ 1 รายการ จาก คุณ {$info['NameThai']} เลขที่ {$params->LeaveTransID} ซึ่งสามารถใช้งานภายในบริษัทผ่าน {$url} หรือ หากเข้าผ่านเว็บไซต์ กรุณากดลิงค์ http://58.97.116.246:9191/leave/ ";
+				$result_email[$id] = sendEmail($email['email'], "Leave's form {$params['LeaveTransID']} have been preapprove (#{$id})", $message);
 			}
 			
 			//email บอกทุกคนยกเว้นตัวเอง
@@ -506,7 +507,7 @@ if(isset($_GET) && isset($_GET['action']) )
 		}else if($params["Status"] == 4)
 		{
 			//CASE DENIED
-			$url = "http://leave.splifetech.com/leave/sick.php#/read/{$params['LeaveTransID']}";
+			$url = "snapacorp/leave/sick.php#/read/{$params['LeaveTransID']}";
 			$result_email = array();
 
 			//email to owner and ppl before
@@ -656,7 +657,7 @@ if(isset($_GET) && isset($_GET['action']) )
 					$array[0] = $params->EmplID;
 					$emails = findEmailsByEmplID($array);
 					$owner_email = $emails[$params->EmplID]['email'];
-					$url = "http://leave.splifetech.com/leave/sick.php#/read/{$params->LeaveTransID}";
+					$url = "http://snapacorp.com/leave/sick.php#/read/{$params->LeaveTransID}";
 					$message = "you can edit your leave form at $url";
 					sendEmail($owner_email, "Your leave form have been save", $message, "noreply@spliftech.com");
 					$data= array(
@@ -672,8 +673,8 @@ if(isset($_GET) && isset($_GET['action']) )
 					$info = $query->selectOne(array(
 						"EmplID" =>$params->EmplID
 					));
-					$url = "http://leave.splifetech.com/leave/sick.php#/read/{$params->LeaveTransID}";
-					$message = "ขณะนี้ท่านมีรายการรออนุมัติ 1 รายการ จาก คุณ {$info['NameThai']} เลขที่ {$params->LeaveTransID} (รหัสเอกสาร) ซึ่งสามารถใช้งานภายในบริษัทผ่าน ลิงค์  หรือ หากเข้าผ่านเว็บไซต์ กรุณากดลิงค์ http://58.97.116.246:9191/leave/ ";
+					$url = "http://snapacorp.com/leave/sick.php#/read/{$params->LeaveTransID}";
+					$message = "ขณะนี้ท่านมีรายการรออนุมัติ 1 รายการ จาก คุณ {$info['NameThai']} เลขที่ {$params->LeaveTransID}  ซึ่งสามารถใช้งานภายในบริษัทผ่าน ลิงค์ {$url}  หรือ หากเข้าผ่านเว็บไซต์ กรุณากดลิงค์ http://58.97.116.246:9191/leave/ ";
 					$response = notifyLeaveTrans($params->LeaveTransID, $params->EmplID, $message);
 					$data= array(
 						'data' => $data,
@@ -723,7 +724,7 @@ if(isset($_GET) && isset($_GET['action']) )
 					$array[0] = $params->EmplID;
 					$emails = findEmailsByEmplID($array);
 					$owner_email = $emails[$params->EmplID]['email'];
-					$url = "http://leave.splifetech.com/leave/sick.php#/read/{$params->LeaveTransID}";
+					$url = "http://snapacorp.com/leave/sick.php#/read/{$params->LeaveTransID}";
 					$message = "you can edit your leave form at $url";
 					sendEmail($owner_email, "Your leave form have been save", $message, "noreply@spliftech.com");
 					$data= array(
@@ -737,8 +738,8 @@ if(isset($_GET) && isset($_GET['action']) )
 					$info = $query->selectOne(array(
 						"EmplID" =>$params->EmplID
 					));
-					$url = "http://leave.splifetech.com/leave/sick.php#/read/{$params->LeaveTransID}";
-					$message = "ขณะนี้ท่านมีรายการรออนุมัติ 1 รายการ จาก คุณ {$info['NameThai']} เลขที่ {$params->LeaveTransID} (รหัสเอกสาร) ซึ่งสามารถใช้งานภายในบริษัทผ่าน ลิงค์ (ที่สามารถเข้าไปอนุมัติรายการได้เลย ไม่ต้อง login) หรือ หากเข้าผ่านเว็บไซต์ กรุณากดลิงค์ http://58.97.116.246:9191/leave/ ";
+					$url = "http://snapacorp.com/leave/sick.php#/read/{$params->LeaveTransID}";
+					$message = "ขณะนี้ท่านมีรายการรออนุมัติ 1 รายการ จาก คุณ {$info['NameThai']} เลขที่ {$params->LeaveTransID} (รหัสเอกสาร) ซึ่งสามารถใช้งานภายในบริษัทผ่าน ลิงค์ {$url} หรือ หากเข้าผ่านเว็บไซต์ กรุณากดลิงค์ http://58.97.116.246:9191/leave/ ";
 					$response = notifyLeaveTrans($params->LeaveTransID, $params->EmplID, $message);
 					$data= array(
 						'data' => $data,

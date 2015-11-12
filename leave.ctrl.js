@@ -730,11 +730,7 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 							Query.get("l_empltable", {"EmplID":obj.EmplID}, function(user){
 								$scope.user = user;
 								//check owner
-								$scope.isOwner = (user.UserID == current_user.user) 
-								$scope.isActualOwner = (user.UserID == current_user.user) 
-								if($scope.isOwner)
-									$scope.isOwner = $filter('canEditForm')(obj.Status);
-								
+								$scope.isOwner =false;
 								Query.query("l_leavetable", {"EmplID":user.EmplID, "Status":"A"}, function(leaves){
 									$scope.leaves = leaves;				
 									
@@ -800,7 +796,7 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 		}	
 		$scope.init();
 	}])
-	.controller("CancleReadCtrl",  ["$controller", "$scope", "$filter", "$routeParams", "Query", "LeaveTypes", "$location", "Config", "$route", function  ($controller, $scope, $filter, $routeParams, Query, LeaveTypes, $location, Config, $route){
+	.controller("CancleReadCtrl",  ["$controller", "$scope", "$filter", "$routeParams", "Query", "LeaveTypes", "$location", "Config", "$route",  function  ($controller, $scope, $filter, $routeParams, Query, LeaveTypes, $location, Config, $route){
 
 			angular.extend(this, $controller('LeaveCtrl', {
 				$scope: $scope,
@@ -823,8 +819,17 @@ angular.module("leave.controller", ['sick.model', 'sick.filter', 'ngFileUpload']
 				Query.query("l_holiday", {}, function (holidays){
 						$scope.holidays = holidays;
 						Query.get("l_cancle_leavetrans", {"LeaveTransID": $routeParams.id}, function (obj){
-							$scope.checkAccess(obj);
+							console.log('test cancle')
+							console.log(obj);
 							
+							if(!angular.isObject(obj))
+							{
+								console.log('change page to ' + ('/cancle/read/' + $routeParams.id))
+								$location.path('/cancle/create/' + $routeParams.id);
+							}
+							$scope.checkAccess(obj);
+
+							//if document not exist go to create trans
 							$scope.DocLeaveType = obj.LeaveType;
 							$scope.isCantCancle = $filter('isCantCancle')(obj.LeaveType);
 							$scope.isCantSend = $filter('isCantSend')(obj.Status);

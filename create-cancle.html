@@ -80,7 +80,7 @@
 	<legend>
 	<table  border=0><tr><td align=center><b>รายละเอียดการลา</b></td></table></legend>
 	     <table style="width:80%" align=center>
-		  <tr>
+		  <tr ng-hide="isOther">
 			 <td width="20%"> </td>
 			 <td >
 			 
@@ -91,12 +91,12 @@
 		 </tr>
 		 <tr ng-show="isOther">
 			 <td width="40%"> <label ng-repeat="n in Config.leaveOtherTypes">
-			          <input required type="radio" name="pageNumber" ng-model="$parent.selectedOtherType" ng-value="n" ng-click="updateOtherType()" /> {{n.name}} &nbsp;&nbsp;
+			          <input ng-disabled="true" required type="radio" name="pageNumber" ng-model="$parent.selectedOtherType" ng-value="n" ng-click="updateOtherType()" /> {{n.name}} &nbsp;&nbsp;
 			     </label></td>
 			 <td>
 			 	
 			 	
-			 	 <input type="text" placeholder="โปรดระบุหัวข้อการลา" ng-model="subject" class="form-control" required />
+			 	 <input type="text" ng-disabled="true" placeholder="โปรดระบุหัวข้อการลา" ng-model="subject" class="form-control" required />
 			 	
 			 </td>
 			 
